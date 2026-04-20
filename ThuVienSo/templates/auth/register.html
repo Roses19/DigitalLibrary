@@ -1,0 +1,62 @@
+
+
+{% extends 'layout/base.html' %}
+
+{% block content %}
+    <div class="container mt-5">
+        <!-- Hiển thị thông báo flash nếu có -->
+        <div class="container mt-4">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        {% if category == 'success' %}
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% elif category == 'error' %}
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+
+        <h2 class="text-center">Đăng Ký Tài Khoản</h2>
+        <form action="{{ url_for('auth.register') }}" method="POST" class="mt-4">
+            <div class="mb-3">
+                <label for="username" class="form-label">Tên đăng nhập</label>
+                <input type="text" class="form-control" id="username" name="username" required>
+            </div>
+             <div class="mb-3">
+                <label for="full_name" class="form-label">Họ tên</label>
+                <input type="text" class="form-control" id="full_name" name="full_name" required>
+            </div>
+            <div class="mb-3">
+                <label for="password" class="form-label">Mật khẩu</label>
+                <input type="password" class="form-control" id="password" name="password" required>
+            </div>
+            <div class="mb-3">
+                <label for="role" class="form-label">Vai trò</label>
+                <select class="form-select" id="role" name="role" required>
+                    <option value="Độc giả">Độc giả</option>
+                    <option value="Thủ thư">Thủ thư</option>
+                    <option value="Quản trị">Quản trị</option>
+                </select>
+            </div>
+             <div class="mb-3">
+                <label for="phonenumber" class="form-label">Số điện thoại</label>
+                <input type="text" class="form-control" id="phonenumber" name="phonenumber" required>
+            </div>
+            <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="email" name="email" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Đăng ký</button>
+        </form>
+        <h1></h1>
+    </div>
+{% endblock %}
