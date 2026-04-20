@@ -1,0 +1,21 @@
+<nav class="navbar">
+    <div class="navbar-container">
+        <a href="{{ url_for('home.index') }}" class="navbar-brand">Thư Viện Số</a>
+        <div class="navbar-search">
+            <form action="{{ url_for('book.search') }}" method="get" class="search-inline">
+                <input
+                    type="text"
+                    name="q"
+                    placeholder="Tìm kiếm sách..."
+                    value="{{ request.args.get('q', '') }}"
+                    class="search-input-nav"
+                >
+                <button type="submit" class="search-btn-nav">Tìm</button>
+            </form>
+        </div>
+        <div class="navbar-links">
+            <a href="{{ url_for('home.index') }}">Trang chủ</a>
+            <a href="{{ url_for('book.search') }}">Sách</a>
+        </div>
+    </div>
+</nav>

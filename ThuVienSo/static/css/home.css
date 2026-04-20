@@ -1,0 +1,103 @@
+/* Hero */
+.hero {
+    background: linear-gradient(135deg, #1a3c5e 0%, #2e6da4 100%);
+    color: #fff;
+    padding: 4rem 1.5rem;
+    text-align: center;
+}
+
+.hero-content {
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.hero-content h1 {
+    font-size: 2.2rem;
+    margin-bottom: 0.75rem;
+}
+
+.hero-content p {
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+    color: #cde0f5;
+}
+
+/* Search form (hero variant) */
+.search-form {
+    width: 100%;
+}
+
+.search-form-group {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.search-input {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    outline: none;
+}
+
+.search-btn {
+    padding: 0.75rem 1.5rem;
+    background-color: #e07b39;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: background-color 0.2s;
+    white-space: nowrap;
+}
+
+.search-btn:hover {
+    background-color: #c5642a;
+}
+
+/* Featured books section */
+.featured-books {
+    padding: 3rem 1.5rem;
+}
+
+.section-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.section-title {
+    font-size: 1.6rem;
+    color: #1a3c5e;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid #e07b39;
+    padding-left: 0.75rem;
+}
+
+.books-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+
+.section-more {
+    text-align: center;
+    margin-top: 2rem;
+}
+
+.btn-more {
+    display: inline-block;
+    padding: 0.65rem 1.8rem;
+    background-color: #1a3c5e;
+    color: #fff;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: background-color 0.2s;
+}
+
+.btn-more:hover {
+    background-color: #14304d;
+}
