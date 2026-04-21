@@ -17,10 +17,25 @@
             <a href="{{ url_for('home.index') }}">Trang chủ</a>
             <a href="{{ url_for('book.search') }}">Sách</a>
             <a href="{{ url_for('book.categories') }}">Danh mục</a>
-            <a href="{{ url_for('auth.register') }}">Đăng ký</a>
-            <a href="{{ url_for('auth.login') }}">Đăng nhập</a>
-
-
         </div>
+
     </div>
+     <div class="navbar-user" style="margin-left: auto; display: flex; align-items: center; gap: 10px;">        {% if session.get('username') %}
+        <span class="navbar-text" style="color: white;">
+            Hi, {{ session.get('username') }}
+        </span>
+
+        <a href="{{ url_for('auth.logout') }}" class="btn btn-danger">
+            Đăng xuất
+        </a>
+    {% else %}
+        <a href="{{ url_for('auth.login') }}" style="margin-right: 10px;color: white">
+    Đăng nhập
+</a>
+
+<a href="{{ url_for('auth.register') }}" style="color: white;">
+    Đăng ký
+</a>
+    {% endif %}
+</div>
 </nav>

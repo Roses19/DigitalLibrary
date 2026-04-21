@@ -9,13 +9,68 @@ from ThuVienSo.data.models.role import Role
 
 
 def register_controller():
+    if request.method == 'POST':
+        username = request.form['username']
+        full_name=request.form['full_name']
+        password = request.form['password']
+        role_name = request.form['role']
+        email = request.form['email']
+        phone = request.form['phonenumber']
 
+        # check tồn tại
+        if User.query.filter_by(username=username).first():
+            flash('Tên đăng nhập đã tồn tại.', 'error')
+            return redirect(url_for('auth.register'))
+
+        if User.query.filter_by(email=email).first():
+            flash('Email đã tồn tại.', 'error')
+            return redirect(url_for('auth.register'))
+
+        # lấy role từ DB
+        role = Role.query.filter_by(name=role_name).first()
+
+        hashed_password = generate_password_hash(password)
+
+        new_user = User(
+            username=username,
+            full_name=full_name,
+            password_hash=hashed_password,
+            email=email,
+            phone=phone,
+            role_id=role.id,
+            status="active"
+        )
+
+        db.session.add(new_user)
+        db.session.commit()
+
+        flash('Đăng ký thành công!', 'success')
+        return redirect(url_for('auth.login'))
 
     return render_template('auth/register.html')
 def login_controller():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        role_name = request.form['role']
+        user = User.query.filter_by(username=username).first()
+
+        if user and user.check_password(password) and user.role.name == role_name:
+            session['username'] = username
+            session['role'] = role_name
+            login_user(user)
+
+            if role_name == 'Quản trị':
+                return redirect(url_for('admin_page'))
+            elif role_name == 'Thủ thư':
+                return redirect(url_for('staff_page'))
+            elif role_name == 'Độc giả':
+                return redirect(url_for('home.index'))
+
+        flash('Sai thông tin đăng nhập!', 'danger')
 
     return render_template('auth/login.html')
 
 def logout_controller():
     session.clear()
-    return redirect(url_for('index'))
+    return redirect(url_for('home.index'))
