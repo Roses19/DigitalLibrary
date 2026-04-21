@@ -1,0 +1,39 @@
+{% extends "layout/base.html" %}
+{% block title %}{{ book.title if book else "Không tìm thấy" }} - Thư Viện Số{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/books.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="detail-page">
+    {% if book %}
+        <div class="detail-container">
+            <div class="detail-cover">
+                <img src="{{ book.cover }}" alt="{{ book.title }}">
+            </div>
+            <div class="detail-info">
+                <h1 class="detail-title">{{ book.title }}</h1>
+                <p class="detail-author">Tác giả: <strong>{{ book.author }}</strong></p>
+                <p class="detail-category">Thể loại: <span class="tag">{{ book.category }}</span></p>
+                <p class="detail-description">{{ book.description }}</p>
+
+                <div class="detail-status">
+                    {% if book.quantity > 0 %}
+                        <span class="status-badge available">Còn {{ book.quantity }} cuốn trong kho</span>
+                        <a href="#" class="btn-borrow">Đăng ký mượn</a>
+                    {% else %}
+                        <span class="status-badge unavailable">Hết sách</span>
+                        <button class="btn-borrow disabled" disabled>Đăng ký mượn</button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="not-found">
+            <p>Không tìm thấy sách này.</p>
+            <a href="{{ url_for('home.index') }}" class="btn-back">Quay lại trang chủ</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

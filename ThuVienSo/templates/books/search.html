@@ -1,0 +1,41 @@
+{% extends "layout/base.html" %}
+{% block title %}Tìm kiếm sách - Thư Viện Số{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/books.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="search-page">
+    <div class="search-page-header">
+        <h1>Tìm kiếm sách</h1>
+        {% include "partials/search_form.html" %}
+    </div>
+
+    {% if searched %}
+        {% if books %}
+            <div class="search-results">
+                <p class="results-count">Tìm thấy <strong>{{ books|length }}</strong> kết quả cho "<em>{{ keyword }}</em>"</p>
+                <div class="books-grid">
+                    {% for book in books %}
+                        {% include "partials/book_card.html" %}
+                    {% endfor %}
+                </div>
+            </div>
+        {% else %}
+            <div class="no-results">
+                <p>Không tìm thấy sách nào phù hợp với "<em>{{ keyword }}</em>".</p>
+                <p>Hãy thử lại với từ khóa khác.</p>
+            </div>
+        {% endif %}
+    {% else %}
+        <div class="search-hint">
+            <p>Nhập từ khóa để tìm kiếm theo tên sách, tác giả hoặc thể loại.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/search.js') }}"></script>
+{% endblock %}
