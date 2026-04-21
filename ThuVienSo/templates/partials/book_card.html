@@ -1,13 +1,35 @@
 <div class="book-card">
-    <a href="{{ url_for('book.detail', book_id=book.id) }}" class="book-card-link">
-        <img src="{{ book.cover }}" alt="{{ book.title }}" class="book-card-cover">
-        <div class="book-card-info">
-            <h3 class="book-card-title">{{ book.title }}</h3>
-            <p class="book-card-author">{{ book.author }}</p>
-            <span class="book-card-category">{{ book.category }}</span>
-            <span class="book-card-status {% if book.quantity > 0 %}available{% else %}unavailable{% endif %}">
-                {% if book.quantity > 0 %}Còn sách{% else %}Hết sách{% endif %}
-            </span>
+    <div class="book-cover-wrapper">
+        {% if book.cover_image %}
+            <img src="{{ book.cover_image }}" alt="{{ book.title }}" class="book-card-cover">
+        {% else %}
+            <img src="{{ url_for('static', filename='images/books/default-book.png') }}" alt="{{ book.title }}" class="book-card-cover">
+        {% endif %}
+
+        <span class="book-status-badge {% if book.available_quantity > 0 %}available{% else %}unavailable{% endif %}">
+            {% if book.available_quantity > 0 %}
+                Còn sách
+            {% else %}
+                Đã hết
+            {% endif %}
+        </span>
+    </div>
+
+    <div class="book-card-info">
+        <h3 class="book-card-title">{{ book.title }}</h3>
+
+        <p class="book-card-author">
+            {{ book.authors | map(attribute='name') | join(', ') }}
+        </p>
+
+        <div class="book-card-actions">
+            <a href=# class="btn-detail">
+                Xem chi tiết
+            </a>
+
+            <a href=#" class="btn-borrow">
+                Mượn sách
+            </a>
         </div>
-    </a>
+    </div>
 </div>

@@ -9,5 +9,10 @@
             autofocus
         >
         <button type="submit" class="search-btn">Tìm kiếm</button>
+        {% if show_advanced %}
+        <a href="{{ url_for('book.advanced_search') }}" class="advanced-search-link">
+            Tìm kiếm nâng cao
+        </a>
+        {% endif %}
     </div>
 </form>
