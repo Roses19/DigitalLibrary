@@ -1,116 +1,121 @@
 {% extends "layout/base.html" %}
-{% block title %}{{ book.title if book else "Không tìm thấy" }} - Thư Viện Số{% endblock %}
+
+{% block title %}
+    {{ book.title if book else "Không tìm thấy" }} - Thư Viện Số
+{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/books.css') }}">
 {% endblock %}
 
 {% block content %}
-<div class="detail-page">
+<div class="book-detail-page">
     {% if book %}
-        <div class="detail-container">
-            <div class="detail-cover">
-                <img src="{{ book.cover }}" alt="{{ book.title }}">
+        <div class="book-detail-card">
+
+            <div class="book-detail-cover">
+                {% if book.cover_image %}
+                    <img src="{{ book.cover_image }}" alt="{{ book.title }}">
+                {% else %}
+                    <img src="{{ url_for('static', filename='images/books/default-book.png') }}" alt="{{ book.title }}">
+                {% endif %}
             </div>
-            <div class="detail-info">
-                <h1 class="detail-title">{{ book.title }}</h1>
-                <p class="detail-author">Tác giả: <strong>{{ book.author }}</strong></p>
-                <p class="detail-category">Thể loại: <span class="tag">{{ book.category }}</span></p>
-                <p class="detail-description">{{ book.description }}</p>
 
-                <div class="detail-tabs">
+            <div class="book-detail-info">
+                <h1>{{ book.title }}</h1>
 
+                <div class="book-detail-actions">
+                    <a href="{{ url_for('book.detail', book_id=book.id) }}" class="detail-tab active">
+                        Xem chi tiết sách
+                    </a>
 
-    <!-- TAB 1: INFO -->
-                  <div class="detail-status">
-    {% if book.quantity > 0 %}
-        <span class="status-badge available">
-            Còn {{ book.quantity }} cuốn trong kho
-        </span>
+                    <a href="#" class="detail-tab borrow">
+                        Mượn sách
+                    </a>
+                </div>
 
-        <table class="borrow-table">
-            <thead>
-                <tr>
-                    <th>Kho sách</th>
-                    <th>Số lượng</th>
-                    <th>Hành động</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>Kho Hiệp Phước</td>
-                    <td>2</td>
-                    <td><button class="btn-borrow">Mượn</button></td>
-                </tr>
-                <tr>
-                    <td>Kho Quận 1</td>
-                    <td>1</td>
-                    <td><button class="btn-borrow">Mượn</button></td>
-                </tr>
-            </tbody>
-        </table>
+                <table class="book-info-table">
+                    <tr>
+                        <th>Thông tin</th>
+                        <th>Chi tiết</th>
+                    </tr>
 
-    {% else %}
-        <span class="status-badge unavailable">Hết sách</span>
-    {% endif %}
-</div>
-    <!-- TAB 2: BORROW -->
-    <div id="borrow" class="tab-panel">
+                    <tr>
+                        <td>Tác giả</td>
+                        <td>{{ book.authors | map(attribute='name') | join(', ') }}</td>
+                    </tr>
 
-        <h3>Danh sách kho còn sách</h3>
+                    <tr>
+                        <td>Thể loại</td>
+                        <td>{{ book.category.name }}</td>
+                    </tr>
 
-        <table class="borrow-table">
-            <thead>
-                <tr>
-                    <th>Kho sách</th>
-                    <th>Số lượng</th>
-                    <th>Hành động</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- GIẢ LẬP -->
-                <tr>
-                    <td>Kho Hiệp Phước</td>
-                    <td>2</td>
-                    <td>
-                        <button class="btn-borrow">Mượn</button>
-                    </td>
-                </tr>
-                <tr>
-                    <td>Kho Quận 1</td>
-                    <td>1</td>
-                    <td>
-                        <button class="btn-borrow">Mượn</button>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+                    <tr>
+                        <td>Nhà xuất bản</td>
+                        <td>{{ book.publisher.name }}</td>
+                    </tr>
 
-    </div>
+                    <tr>
+                        <td>ISBN</td>
+                        <td>{{ book.isbn }}</td>
+                    </tr>
 
-</div>
+                    <tr>
+                        <td>Số trang</td>
+                        <td>{{ book.pages }}</td>
+                    </tr>
+
+                    <tr>
+                        <td>Năm xuất bản</td>
+                        <td>{{ book.publish_year }}</td>
+                    </tr>
+
+                    <tr>
+                        <td>Ngôn ngữ</td>
+                        <td>{{ book.language }}</td>
+                    </tr>
+
+                    <tr>
+                        <td>Vị trí kệ</td>
+                        <td>{{ book.shelf_location }}</td>
+                    </tr>
+
+                    <tr>
+                        <td>Tình trạng</td>
+                        <td>
+                            {% if book.available_quantity > 0 %}
+                                <span class="status-badge available">
+                                    Còn {{ book.available_quantity }}/{{ book.total_quantity }} cuốn
+                                </span>
+                            {% else %}
+                                <span class="status-badge unavailable">
+                                    Đã hết sách
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+
+                <div class="book-description">
+                    <h3>Mô tả sách</h3>
+                    <p>{{ book.description or "Chưa có mô tả cho sách này." }}</p>
+                </div>
+
+                <div class="book-detail-footer">
+                    <a href="{{ url_for('book.search') }}" class="btn-back">
+                        Quay lại danh sách
+                    </a>
+                </div>
             </div>
+
         </div>
     {% else %}
         <div class="not-found">
             <p>Không tìm thấy sách này.</p>
-            <a href="{{ url_for('home.index') }}" class="btn-back">Quay lại trang chủ</a>
+            <a href="{{ url_for('home.index') }}" class="btn-back">
+                Quay lại trang chủ
+            </a>
         </div>
     {% endif %}
 </div>
-<script>
-function openTab(event, tabId) {
-    document.querySelectorAll(".tab-panel").forEach(tab => {
-        tab.classList.remove("active");
-    });
-
-    document.querySelectorAll(".tab-btn").forEach(btn => {
-        btn.classList.remove("active");
-    });
-
-    document.getElementById(tabId).classList.add("active");
-    event.currentTarget.classList.add("active");
-}
-</script>
 {% endblock %}
-

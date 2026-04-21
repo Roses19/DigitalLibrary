@@ -25,7 +25,6 @@ def advanced_search():
 def detail(book_id):
     return get_book_detail(book_id)
 
-
 @book_bp.route("/categories")
 def categories():
     return get_categories()

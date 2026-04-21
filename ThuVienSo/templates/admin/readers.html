@@ -1,0 +1,64 @@
+
+<!--Sau này gắn <a href="{{ url_for('user.readers') }}">Quản lý độc giả</a>-->
+
+{% extends "layout/base.html" %}
+
+{% block title %}Quản lý độc giả - Thư Viện Số{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="readers-page">
+    <div class="readers-header">
+        <div>
+            <h1>Quản lý độc giả</h1>
+            <p>Danh sách tài khoản độc giả trong hệ thống thư viện.</p>
+        </div>
+        <a href="#" class="btn-add-reader">➕ Thêm tài khoản</a>
+    </div>
+
+    <div class="readers-table-card">
+       <table class="readers-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Họ tên</th>
+                    <th>Email</th>
+                    <th>Tên đăng nhập</th>
+                    <th>Số điện thoại</th>
+                    <th>Trạng thái</th>
+                    <th>Ngày tạo</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for reader in readers %}
+                <tr>
+                    <td>{{ reader.id }}</td>
+                    <td class="reader-name">{{ reader.full_name }}</td>
+                    <td>{{ reader.email }}</td>
+                    <td>{{ reader.username }}</td>
+                    <td>{{ reader.phone or "Chưa cập nhật" }}</td>
+                    <td>
+                        <span class="status-badge {{ reader.status }}">
+                            {{ reader.status }}
+                        </span>
+                    </td>
+                    <td>
+                        {{ reader.created_at.strftime('%d/%m/%Y') if reader.created_at else "Không có dữ liệu" }}
+                    </td>
+                    <td class="reader-actions">
+                        <a href="#" class="btn-action edit">✏️</a>
+                        <a href="#" class="btn-action save">💾</a>
+                        <a href="#" class="btn-action delete">🗑️</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,14 +1,56 @@
 <nav class="navbar">
     <div class="navbar-container">
-        <a href="{{ url_for('home.index') }}" class="navbar-brand">Thư Viện Số</a>
+
+        <!-- LEFT -->
+        <div class="navbar-left">
+            <a href="{{ url_for('home.index') }}" class="navbar-brand">
+                Thư Viện Số
+            </a>
+        </div>
+
+        <!-- CENTER -->
         <div class="navbar-links">
             <a href="{{ url_for('home.index') }}">Trang chủ</a>
+            <a href="#">Giới thiệu</a>
             <a href="{{ url_for('book.search') }}">Sách</a>
             <a href="{{ url_for('book.categories') }}">Danh mục</a>
-            <a href="{{ url_for('auth.register') }}">Đăng ký</a>
-            <a href="{{ url_for('auth.login') }}">Đăng nhập</a>
-            <a href="#">🔔</a>
+            <a href="#">Các chi nhánh thư viện</a>
+        </div>
 
+        <!-- RIGHT -->
+        <div class="navbar-user">
+            <a href="#" class="navbar-notification">🔔</a>
+
+            {% if session.get('username') %}
+                <div class="user-dropdown">
+                    <button class="user-dropdown-btn">
+                        <span>Hi, {{ session.get('username') }}</span>
+                        <span class="dropdown-arrow">▾</span>
+                    </button>
+
+                    <div class="user-dropdown-menu">
+                        <a href="{{ url_for('user.user_profile') }}" class="dropdown-item">
+                            <span class="dropdown-icon">👤</span>
+                            <span>Thông tin cá nhân</span>
+                        </a>
+
+                        <a href="#" class="dropdown-item">
+                            <span class="dropdown-icon">📚</span>
+                            <span>Lịch sử mượn sách</span>
+                        </a>
+
+                        <div class="dropdown-divider"></div>
+
+                        <a href="{{ url_for('auth.logout') }}" class="dropdown-item logout">
+                            <span class="dropdown-icon">🚪</span>
+                            <span>Đăng xuất</span>
+                        </a>
+                    </div>
+                </div>
+            {% else %}
+                <a href="{{ url_for('auth.login') }}">Đăng nhập</a>
+                <a href="{{ url_for('auth.register') }}">Đăng ký</a>
+            {% endif %}
         </div>
     </div>
 </nav>

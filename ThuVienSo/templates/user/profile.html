@@ -1,0 +1,65 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Thông tin cá nhân - Thư Viện Số{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="profile-page">
+    <div class="profile-card">
+
+        <div class="profile-header">
+            <div class="profile-avatar">
+                {{ user.full_name[0] if user.full_name else user.username[0] }}
+            </div>
+
+            <div>
+                <h1>{{ user.full_name }}</h1>
+                <p>@{{ user.username }}</p>
+            </div>
+        </div>
+
+        <form method="POST" action="{{ url_for('user.update_profile') }}">
+            <div class="profile-info-grid">
+                <div class="profile-info-item">
+                    <span>Họ và tên</span>
+                    <input type="text" name="full_name" value="{{ user.full_name }}" required>
+                </div>
+
+                <div class="profile-info-item">
+                    <span>Email</span>
+                    <input type="email" name="email" value="{{ user.email }}" required>
+                </div>
+
+                <div class="profile-info-item">
+                    <span>Tên đăng nhập</span>
+                    <input type="text" value="{{ user.username }}" disabled>
+                </div>
+
+                <div class="profile-info-item">
+                    <span>Số điện thoại</span>
+                    <input type="text" name="phone" value="{{ user.phone or '' }}">
+                </div>
+
+                <div class="profile-info-item">
+                    <span>Trạng thái</span>
+                    <input type="text" value="{{ user.status }}" disabled>
+                </div>
+
+                <div class="profile-info-item">
+                    <span>Ngày tạo tài khoản</span>
+                    <input type="text" value="{{ user.created_at.strftime('%d/%m/%Y %H:%M') if user.created_at else 'Không có dữ liệu' }}" disabled>
+                </div>
+            </div>
+
+            <div class="profile-actions">
+                <button type="submit" class="btn-profile-edit">Lưu thay đổi</button>
+                <a href="{{ url_for('home.index') }}" class="btn-profile-back">Quay lại trang chủ</a>
+            </div>
+        </form>
+
+    </div>
+</div>
+{% endblock %}

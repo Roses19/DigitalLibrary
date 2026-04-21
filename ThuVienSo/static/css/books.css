@@ -571,3 +571,174 @@
 .borrow-table th {
     background: #f5f5f5;
 }
+/* =========================
+   BOOK DETAIL PAGE
+   ========================= */
+
+.book-detail-page {
+    padding: 40px 20px;
+    background: #f8fafc;
+}
+
+/* Card chính */
+.book-detail-card {
+    max-width: 1000px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 12px;
+    padding: 28px;
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 32px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+}
+
+/* Ảnh */
+.book-detail-cover img {
+    width: 100%;
+    height: 460px;
+    object-fit: contain;
+    background: #f3f4f6;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+}
+
+/* Title */
+.book-detail-info h1 {
+    font-size: 28px;
+    color: #123b5d;
+    margin-bottom: 16px;
+    font-weight: 700;
+}
+
+/* Tabs */
+.book-detail-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin-bottom: 0;
+}
+
+.detail-tab {
+    padding: 12px;
+    text-align: center;
+    background: #2d8dea;
+    color: white;
+    font-weight: 700;
+    text-decoration: none;
+    border: 1px solid #1f5f9f;
+}
+
+.detail-tab:first-child {
+    border-radius: 8px 0 0 0;
+}
+
+.detail-tab:last-child {
+    border-radius: 0 8px 0 0;
+}
+
+.detail-tab.borrow {
+    background: #7db5f0;
+}
+
+.detail-tab:hover {
+    opacity: 0.9;
+    color: white;
+}
+
+/* Table */
+.book-info-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+.book-info-table th,
+.book-info-table td {
+    border: 1px solid #9ca3af;
+    padding: 12px 14px;
+    font-size: 15px;
+}
+
+.book-info-table th {
+    background: #f3f4f6;
+    text-align: center;
+    color: #123b5d;
+}
+
+.book-info-table td:first-child {
+    font-weight: 600;
+    width: 35%;
+    background: #fafafa;
+}
+
+/* Status badge */
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.status-badge.available {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-badge.unavailable {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+/* Description */
+.book-description {
+    padding: 16px;
+    border-radius: 8px;
+    background: #f8fafc;
+    border-left: 4px solid #e97732;
+}
+
+.book-description h3 {
+    margin-bottom: 8px;
+    color: #123b5d;
+}
+
+.book-description p {
+    margin: 0;
+    line-height: 1.7;
+    color: #374151;
+}
+
+/* Back button */
+.btn-back {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 10px 18px;
+    background: #1a3c5e;
+    color: white;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.btn-back:hover {
+    background: #14304d;
+    color: white;
+}
+
+/* Not found */
+.not-found {
+    text-align: center;
+    padding: 4rem;
+    color: #666;
+}
+
+/* Responsive */
+@media (max-width: 850px) {
+    .book-detail-card {
+        grid-template-columns: 1fr;
+    }
+
+    .book-detail-cover img {
+        height: 360px;
+    }
+}

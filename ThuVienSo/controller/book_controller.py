@@ -10,6 +10,9 @@ from ThuVienSo.data.models.author import Author
 def get_home_books():
     return Book.query.order_by(Book.created_at.desc()).limit(4).all()
 
+def get_book_detail(book_id):
+    book = Book.query.get_or_404(book_id)
+    return render_template("books/detail.html", book=book)
 
 # ================== CATEGORY ==================
 def get_categories():
