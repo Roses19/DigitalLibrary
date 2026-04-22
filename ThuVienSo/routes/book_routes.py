@@ -8,7 +8,6 @@ from ThuVienSo.controller.book_controller import (
     update_category,
     delete_category,
 )
-
 book_bp = Blueprint("book", __name__, url_prefix="/books")
 
 
@@ -29,17 +28,3 @@ def detail(book_id):
 def categories():
     return get_categories()
 
-
-@book_bp.route("/categories/create", methods=["POST"])
-def category_create():
-    return create_category()
-
-
-@book_bp.route("/categories/<int:category_id>/edit", methods=["POST"])
-def category_edit(category_id):
-    return update_category(category_id)
-
-
-@book_bp.route("/categories/<int:category_id>/delete", methods=["POST"])
-def category_delete(category_id):
-    return delete_category(category_id)

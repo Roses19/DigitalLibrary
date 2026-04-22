@@ -10,9 +10,6 @@ from ThuVienSo.data.models.author import Author
 def get_home_books():
     return Book.query.order_by(Book.created_at.desc()).limit(4).all()
 
-def get_book_detail(book_id):
-    book = Book.query.get_or_404(book_id)
-    return render_template("books/detail.html", book=book)
 
 # ================== CATEGORY ==================
 def get_categories():
@@ -79,7 +76,7 @@ def delete_category(category_id):
         flash("Không tìm thấy danh mục.", "error")
         return redirect(url_for("book.categories"))
 
-    if category.books:  # dùng relationship
+    if category.books:
         flash(f'Không thể xóa "{category.name}" vì đang có sách.', "error")
         return redirect(url_for("book.categories"))
 
@@ -91,7 +88,82 @@ def delete_category(category_id):
 
 
 # ================== SEARCH ==================
-def build_book_query(keyword="", publisher_id="", category_id=""):
+def build_book_query(keyword="", category_ids=None, publisher_ids=None, status=""):
+    query = Book.query
+
+    category_ids = category_ids or []
+    publisher_ids = publisher_ids or []
+
+    if keyword:
+        query = query.outerjoin(Book.authors).filter(
+            db.or_(
+                Book.title.ilike(f"%{keyword}%"),
+                Book.isbn.ilike(f"%{keyword}%"),
+                Author.name.ilike(f"%{keyword}%")
+            )
+        )
+
+    if category_ids:
+        query = query.filter(Book.category_id.in_(category_ids))
+
+    if publisher_ids:
+        query = query.filter(Book.publisher_id.in_(publisher_ids))
+
+    if status == "available":
+        query = query.filter(Book.available_quantity > 0)
+
+    elif status == "unavailable":
+        query = query.filter(Book.available_quantity <= 0)
+
+    return query.distinct()
+
+
+def search_books():
+    keyword = request.args.get("q", "").strip()
+
+    selected_categories = request.args.getlist("category")
+    selected_publishers = request.args.getlist("publisher")
+    selected_status = request.args.get("status", "").strip()
+
+    categories = Category.query.order_by(Category.name.asc()).all()
+    publishers = Publisher.query.order_by(Publisher.name.asc()).all()
+
+    searched = bool(
+        keyword or selected_categories or selected_publishers or selected_status
+    )
+
+    if searched:
+        books = build_book_query(
+            keyword=keyword,
+            category_ids=selected_categories,
+            publisher_ids=selected_publishers,
+            status=selected_status
+        ).order_by(Book.created_at.desc()).all()
+    else:
+        books = []
+
+    return render_template(
+        "books/search.html",
+        books=books,
+        keyword=keyword,
+        searched=searched,
+        categories=categories,
+        publishers=publishers,
+        selected_categories=selected_categories,
+        selected_publishers=selected_publishers,
+        selected_status=selected_status
+    )
+
+
+# ================== ADVANCED SEARCH ==================
+def advanced_search_controller():
+    keyword = request.args.get("q", "").strip()
+    publisher_id = request.args.get("publisher_id", "").strip()
+    category_id = request.args.get("category_id", "").strip()
+
+    categories = Category.query.order_by(Category.name.asc()).all()
+    publishers = Publisher.query.order_by(Publisher.name.asc()).all()
+
     query = Book.query
 
     if keyword:
@@ -109,42 +181,10 @@ def build_book_query(keyword="", publisher_id="", category_id=""):
     if category_id:
         query = query.filter(Book.category_id == int(category_id))
 
-    return query
-
-
-def search_books():
-    keyword = request.args.get("q", "").strip()
-
-    if not keyword:
-        return render_template("books/search.html", books=[], keyword="", searched=False)
-
-    books = build_book_query(keyword=keyword) \
-        .order_by(Book.created_at.desc()) \
-        .all()
+    books = query.distinct().order_by(Book.created_at.desc()).all()
 
     return render_template(
         "books/search.html",
-        books=books,
-        keyword=keyword,
-        searched=True
-    )
-
-
-# ================== ADVANCED SEARCH ==================
-def advanced_search_controller():
-    keyword = request.args.get("q", "").strip()
-    publisher_id = request.args.get("publisher_id", "").strip()
-    category_id = request.args.get("category_id", "").strip()
-
-    categories = Category.query.order_by(Category.name.asc()).all()
-    publishers = Publisher.query.order_by(Publisher.name.asc()).all()
-
-    books = build_book_query(keyword, publisher_id, category_id) \
-        .order_by(Book.created_at.desc()) \
-        .all()
-
-    return render_template(
-        "books/advanced_search.html",
         books=books,
         categories=categories,
         publishers=publishers,

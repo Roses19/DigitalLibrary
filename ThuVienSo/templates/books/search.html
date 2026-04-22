@@ -6,37 +6,136 @@
 {% endblock %}
 
 {% block content %}
-<div class="search-page">
-    <div class="search-page-header">
-        <h1>Tìm kiếm sách</h1>
-        {% set show_advanced = False %}
-        {% include "partials/search_form.html" %}
-    </div>
+<div class="search-layout">
 
-    {% if searched %}
-        {% if books %}
-            <div class="search-results">
-                <p class="results-count">Tìm thấy <strong>{{ books|length }}</strong> kết quả cho "<em>{{ keyword }}</em>"</p>
+    <!-- SIDEBAR -->
+    <aside class="search-sidebar">
+        <div class="filter-header">
+            <h3>Tìm kiếm sách</h3>
+            <a href="{{ url_for('book.search') }}" class="reset-filter" title="Xóa bộ lọc">
+                ↻
+            </a>
+        </div>
+
+        <form method="GET" action="{{ url_for('book.search') }}">
+
+            <!-- Từ khóa -->
+            <div class="sidebar-search-box">
+                <input type="text"
+                       name="q"
+                       value="{{ keyword or '' }}"
+                       placeholder="Tên sách, ISBN, tác giả..."
+                       class="sidebar-search-input">
+
+                <button type="submit" class="sidebar-search-btn">
+                    🔍
+                </button>
+            </div>
+
+            <!-- Thể loại -->
+            <div class="filter-group">
+                <div class="filter-title">
+                    <span>Thể loại</span>
+                    <span>▾</span>
+                </div>
+
+                {% if categories %}
+                    {% for category in categories %}
+                        <label class="filter-item">
+                            <input type="checkbox"
+                                   name="category"
+                                   value="{{ category.id }}"
+                                   {% if category.id|string in selected_categories %}checked{% endif %}>
+                            {{ category.name }}
+                        </label>
+                    {% endfor %}
+                {% else %}
+                    <p class="filter-empty">Chưa có thể loại</p>
+                {% endif %}
+            </div>
+
+            <!-- Nhà xuất bản -->
+            <div class="filter-group">
+                <div class="filter-title">
+                    <span>Nhà xuất bản</span>
+                    <span>▾</span>
+                </div>
+
+                {% if publishers %}
+                    {% for publisher in publishers %}
+                        <label class="filter-item">
+                            <input type="checkbox"
+                                   name="publisher"
+                                   value="{{ publisher.id }}"
+                                   {% if publisher.id|string in selected_publishers %}checked{% endif %}>
+                            {{ publisher.name }}
+                        </label>
+                    {% endfor %}
+                {% else %}
+                    <p class="filter-empty">Chưa có nhà xuất bản</p>
+                {% endif %}
+            </div>
+
+            <!-- Tình trạng -->
+            <div class="filter-group">
+                <div class="filter-title">
+                    <span>Tình trạng</span>
+                    <span>▾</span>
+                </div>
+
+                <label class="filter-item">
+                    <input type="radio"
+                           name="status"
+                           value="available"
+                           {% if selected_status == 'available' %}checked{% endif %}>
+                    Còn sách
+                </label>
+
+                <label class="filter-item">
+                    <input type="radio"
+                           name="status"
+                           value="unavailable"
+                           {% if selected_status == 'unavailable' %}checked{% endif %}>
+                    Đã hết
+                </label>
+            </div>
+
+            <button type="submit" class="apply-filter-btn">
+                Áp dụng bộ lọc
+            </button>
+        </form>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="search-main">
+        <h2 class="search-main-title">Kết quả tìm kiếm</h2>
+
+        {% if searched %}
+            {% if books %}
+                <p class="results-count">
+                    Tìm thấy <strong>{{ books|length }}</strong> kết quả
+                    {% if keyword %}
+                        cho "<em>{{ keyword }}</em>"
+                    {% endif %}
+                </p>
+
                 <div class="books-grid">
                     {% for book in books %}
                         {% include "partials/book_card.html" %}
                     {% endfor %}
                 </div>
-            </div>
+            {% else %}
+                <div class="no-results">
+                    <p>Không tìm thấy sách phù hợp.</p>
+                    <p>Hãy thử đổi từ khóa hoặc bỏ bớt bộ lọc.</p>
+                </div>
+            {% endif %}
         {% else %}
-            <div class="no-results">
-                <p>Không tìm thấy sách nào phù hợp với "<em>{{ keyword }}</em>".</p>
-                <p>Hãy thử lại với từ khóa khác.</p>
+            <div class="search-hint">
+                <p>Nhập từ khóa hoặc chọn thể loại, nhà xuất bản, tình trạng để tìm kiếm.</p>
             </div>
         {% endif %}
-    {% else %}
-        <div class="search-hint">
-            <p>Nhập từ khóa để tìm kiếm theo tên sách, tác giả hoặc thể loại.</p>
-        </div>
-    {% endif %}
-</div>
-{% endblock %}
+    </main>
 
-{% block extra_js %}
-<script src="{{ url_for('static', filename='js/search.js') }}"></script>
+</div>
 {% endblock %}
