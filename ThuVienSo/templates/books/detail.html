@@ -18,15 +18,77 @@
                 <p class="detail-category">Thể loại: <span class="tag">{{ book.category }}</span></p>
                 <p class="detail-description">{{ book.description }}</p>
 
-                <div class="detail-status">
-                    {% if book.quantity > 0 %}
-                        <span class="status-badge available">Còn {{ book.quantity }} cuốn trong kho</span>
-                        <a href="#" class="btn-borrow">Đăng ký mượn</a>
-                    {% else %}
-                        <span class="status-badge unavailable">Hết sách</span>
-                        <button class="btn-borrow disabled" disabled>Đăng ký mượn</button>
-                    {% endif %}
-                </div>
+                <div class="detail-tabs">
+
+
+    <!-- TAB 1: INFO -->
+                  <div class="detail-status">
+    {% if book.quantity > 0 %}
+        <span class="status-badge available">
+            Còn {{ book.quantity }} cuốn trong kho
+        </span>
+
+        <table class="borrow-table">
+            <thead>
+                <tr>
+                    <th>Kho sách</th>
+                    <th>Số lượng</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Kho Hiệp Phước</td>
+                    <td>2</td>
+                    <td><button class="btn-borrow">Mượn</button></td>
+                </tr>
+                <tr>
+                    <td>Kho Quận 1</td>
+                    <td>1</td>
+                    <td><button class="btn-borrow">Mượn</button></td>
+                </tr>
+            </tbody>
+        </table>
+
+    {% else %}
+        <span class="status-badge unavailable">Hết sách</span>
+    {% endif %}
+</div>
+    <!-- TAB 2: BORROW -->
+    <div id="borrow" class="tab-panel">
+
+        <h3>Danh sách kho còn sách</h3>
+
+        <table class="borrow-table">
+            <thead>
+                <tr>
+                    <th>Kho sách</th>
+                    <th>Số lượng</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- GIẢ LẬP -->
+                <tr>
+                    <td>Kho Hiệp Phước</td>
+                    <td>2</td>
+                    <td>
+                        <button class="btn-borrow">Mượn</button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Kho Quận 1</td>
+                    <td>1</td>
+                    <td>
+                        <button class="btn-borrow">Mượn</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+    </div>
+
+</div>
             </div>
         </div>
     {% else %}
@@ -36,4 +98,19 @@
         </div>
     {% endif %}
 </div>
+<script>
+function openTab(event, tabId) {
+    document.querySelectorAll(".tab-panel").forEach(tab => {
+        tab.classList.remove("active");
+    });
+
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+        btn.classList.remove("active");
+    });
+
+    document.getElementById(tabId).classList.add("active");
+    event.currentTarget.classList.add("active");
+}
+</script>
 {% endblock %}
+
