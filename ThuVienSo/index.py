@@ -3,6 +3,7 @@ from ThuVienSo.routes.home_routes import home_bp
 from ThuVienSo.routes.book_routes import book_bp
 
 app = Flask(__name__)
+app.secret_key = "digital-library-secret-key"
 
 app.register_blueprint(home_bp)
 app.register_blueprint(book_bp)

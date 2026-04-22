@@ -1,0 +1,120 @@
+{% extends "layout/base.html" %}
+{% block title %}Quản lý danh mục - Thư Viện Số{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/books.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="categories-page">
+    <div class="categories-header">
+        <h1>Quản lý danh mục</h1>
+        <button class="btn-primary" onclick="toggleForm('add-form')">+ Thêm danh mục</button>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Form thêm mới -->
+    <div class="category-form-card" id="add-form" style="display:none;">
+        <h2>Thêm danh mục mới</h2>
+        <form action="{{ url_for('book.category_create') }}" method="post">
+            <div class="form-group">
+                <label for="add-name">Tên danh mục <span class="required">*</span></label>
+                <input type="text" id="add-name" name="name" placeholder="VD: Lịch sử" required>
+            </div>
+            <div class="form-group">
+                <label for="add-desc">Mô tả</label>
+                <textarea id="add-desc" name="description" rows="2" placeholder="Mô tả ngắn về danh mục..."></textarea>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">Lưu</button>
+                <button type="button" class="btn-secondary" onclick="toggleForm('add-form')">Hủy</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Bảng danh mục -->
+    <div class="categories-table-wrap">
+        <table class="categories-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Tên danh mục</th>
+                    <th>Mô tả</th>
+                    <th>Số sách</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if categories %}
+                    {% for cat in categories %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td class="cat-name">{{ cat.name }}</td>
+                        <td class="cat-desc">{{ cat.description or '—' }}</td>
+                        <td>
+                            <span class="book-count-badge">{{ cat.book_count }}</span>
+                        </td>
+                        <td class="cat-actions">
+                            <button class="btn-edit" onclick="toggleEditForm({{ cat.id }})">Sửa</button>
+                            <form action="{{ url_for('book.category_delete', category_id=cat.id) }}" method="post"
+                                  onsubmit="return confirm('Xóa danh mục \'{{ cat.name }}\'?')">
+                                <button type="submit" class="btn-delete"
+                                    {% if cat.book_count > 0 %}disabled title="Không thể xóa vì có sách"{% endif %}>
+                                    Xóa
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    <!-- Form sửa inline -->
+                    <tr class="edit-row" id="edit-row-{{ cat.id }}" style="display:none;">
+                        <td colspan="5">
+                            <form action="{{ url_for('book.category_edit', category_id=cat.id) }}" method="post"
+                                  class="edit-inline-form">
+                                <div class="form-group">
+                                    <label>Tên danh mục <span class="required">*</span></label>
+                                    <input type="text" name="name" value="{{ cat.name }}" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Mô tả</label>
+                                    <textarea name="description" rows="2">{{ cat.description }}</textarea>
+                                </div>
+                                <div class="form-actions">
+                                    <button type="submit" class="btn-primary">Cập nhật</button>
+                                    <button type="button" class="btn-secondary"
+                                            onclick="toggleEditForm({{ cat.id }})">Hủy</button>
+                                </div>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="empty-table">Chưa có danh mục nào.</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleForm(id) {
+    const el = document.getElementById(id);
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function toggleEditForm(catId) {
+    const row = document.getElementById('edit-row-' + catId);
+    row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+}
+</script>
+{% endblock %}

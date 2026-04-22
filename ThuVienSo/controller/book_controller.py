@@ -1,4 +1,14 @@
-from flask import request, render_template
+from flask import request, render_template, redirect, url_for, flash
+
+CATEGORIES = [
+    {"id": 1, "name": "Công nghệ",   "description": "Sách về lập trình, CNTT, kỹ thuật phần mềm.", "book_count": 3},
+    {"id": 2, "name": "Toán học",    "description": "Giáo trình toán đại học và phổ thông.",        "book_count": 1},
+    {"id": 3, "name": "Khoa học",    "description": "Vật lý, Hóa học, Sinh học đại cương.",         "book_count": 1},
+    {"id": 4, "name": "Văn học",     "description": "Tác phẩm văn học trong và ngoài nước.",        "book_count": 0},
+    {"id": 5, "name": "Kinh tế",     "description": "Kinh tế học, quản trị kinh doanh.",            "book_count": 0},
+]
+
+_category_id_counter = 6
 
 BOOKS = [
     {
@@ -47,6 +57,73 @@ BOOKS = [
         "quantity": 1,
     },
 ]
+
+
+def get_categories():
+    return render_template("books/categories.html", categories=CATEGORIES)
+
+
+def create_category():
+    global _category_id_counter
+    name = request.form.get("name", "").strip()
+    description = request.form.get("description", "").strip()
+
+    if not name:
+        flash("Tên danh mục không được để trống.", "error")
+        return redirect(url_for("book.categories"))
+
+    if any(c["name"].lower() == name.lower() for c in CATEGORIES):
+        flash(f'Danh mục "{name}" đã tồn tại.', "error")
+        return redirect(url_for("book.categories"))
+
+    CATEGORIES.append({
+        "id": _category_id_counter,
+        "name": name,
+        "description": description,
+        "book_count": 0,
+    })
+    _category_id_counter += 1
+    flash(f'Đã thêm danh mục "{name}".', "success")
+    return redirect(url_for("book.categories"))
+
+
+def update_category(category_id):
+    name = request.form.get("name", "").strip()
+    description = request.form.get("description", "").strip()
+    cat = next((c for c in CATEGORIES if c["id"] == category_id), None)
+
+    if cat is None:
+        flash("Không tìm thấy danh mục.", "error")
+        return redirect(url_for("book.categories"))
+
+    if not name:
+        flash("Tên danh mục không được để trống.", "error")
+        return redirect(url_for("book.categories"))
+
+    if any(c["name"].lower() == name.lower() and c["id"] != category_id for c in CATEGORIES):
+        flash(f'Danh mục "{name}" đã tồn tại.', "error")
+        return redirect(url_for("book.categories"))
+
+    cat["name"] = name
+    cat["description"] = description
+    flash(f'Đã cập nhật danh mục "{name}".', "success")
+    return redirect(url_for("book.categories"))
+
+
+def delete_category(category_id):
+    cat = next((c for c in CATEGORIES if c["id"] == category_id), None)
+
+    if cat is None:
+        flash("Không tìm thấy danh mục.", "error")
+        return redirect(url_for("book.categories"))
+
+    if cat["book_count"] > 0:
+        flash(f'Không thể xóa danh mục "{cat["name"]}" vì đang có {cat["book_count"]} sách.', "error")
+        return redirect(url_for("book.categories"))
+
+    CATEGORIES.remove(cat)
+    flash(f'Đã xóa danh mục "{cat["name"]}".', "success")
+    return redirect(url_for("book.categories"))
 
 
 def get_home_books():
