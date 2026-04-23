@@ -1,0 +1,96 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Lịch sử mượn sách - Thư Viện Số{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/borrow.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="borrow-history-page">
+    <div class="borrow-history-header">
+        <h1>Lịch sử mượn sách</h1>
+        <p>Theo dõi các sách bạn đã mượn và trạng thái trả sách.</p>
+    </div>
+
+    <div class="borrow-history-card">
+        <table class="borrow-history-table">
+            <thead>
+                <tr>
+                    <th>Sách</th>
+                    <th>Ngày mượn</th>
+                    <th>Hạn trả</th>
+                    <th>Số lượng</th>
+                    <th>Đã trả</th>
+                    <th>Trạng thái mượn</th>
+                    <th>Trạng thái sách</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for item in histories %}
+                <tr>
+                    <td class="borrow-book-cell">
+                        {% if item.cover_image %}
+                            <img src="{{ item.cover_image }}" alt="{{ item.book_title }}">
+                        {% else %}
+                            <img src="{{ url_for('static', filename='images/books/default-book.png') }}" alt="{{ item.book_title }}">
+                        {% endif %}
+
+                        <div>
+                            <strong>{{ item.book_title }}</strong>
+                            <a href="{{ url_for('book.detail', book_id=item.book_id) }}">
+                                Xem chi tiết
+                            </a>
+                        </div>
+                    </td>
+
+                    <td>
+                        {{ item.borrow_date.strftime('%d/%m/%Y') if item.borrow_date else "Không có dữ liệu" }}
+                    </td>
+
+                    <td>
+                        {{ item.due_date.strftime('%d/%m/%Y') if item.due_date else "Không có dữ liệu" }}
+                    </td>
+
+                    <td>{{ item.quantity }}</td>
+                    <td>{{ item.returned_quantity }}</td>
+
+                    <td>
+                        <span class="borrow-status {{ item.borrow_status }}">
+                            {% if item.borrow_status == "borrowing" %}
+                                Đang mượn
+                            {% elif item.borrow_status == "returned" %}
+                                Đã trả
+                            {% elif item.borrow_status == "overdue" %}
+                                Quá hạn
+                            {% else %}
+                                {{ item.borrow_status }}
+                            {% endif %}
+                        </span>
+                    </td>
+
+                    <td>
+                        <span class="item-status {{ item.item_status }}">
+                            {% if item.item_status == "borrowing" %}
+                                Đang mượn
+                            {% elif item.item_status == "returned" %}
+                                Đã trả
+                            {% else %}
+                                {{ item.item_status }}
+                            {% endif %}
+                        </span>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="empty-history">
+                        Bạn chưa có lịch sử mượn sách.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

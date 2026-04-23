@@ -33,12 +33,10 @@
                             <span class="dropdown-icon">👤</span>
                             <span>Thông tin cá nhân</span>
                         </a>
-
-                        <a href="#" class="dropdown-item">
+                        <a href="{{ url_for('borrow.history') }}" class="dropdown-item">
                             <span class="dropdown-icon">📚</span>
                             <span>Lịch sử mượn sách</span>
                         </a>
-
                         <div class="dropdown-divider"></div>
 
                         <a href="{{ url_for('auth.logout') }}" class="dropdown-item logout">

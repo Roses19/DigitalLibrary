@@ -3,7 +3,7 @@ from ThuVienSo import init_app
 from ThuVienSo.routes.home_routes import home_bp
 from ThuVienSo.routes.book_routes import book_bp
 from ThuVienSo.routes.auth_routes import auth
-from ThuVienSo.routes.borrow_routes import borrow_manage_bp
+from ThuVienSo.routes.borrow_routes import borrow_bp
 from ThuVienSo.routes.admin_routes import admin_bp
 from ThuVienSo.routes.user_routes import user_bp
 app = Flask(
@@ -17,7 +17,7 @@ init_app(app)
 app.register_blueprint(home_bp)
 app.register_blueprint(book_bp)
 app.register_blueprint(auth)
-app.register_blueprint(borrow_manage_bp)
+app.register_blueprint(borrow_bp)
 app.register_blueprint(admin_bp)
 app.register_blueprint(user_bp)
 

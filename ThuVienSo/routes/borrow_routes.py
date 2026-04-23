@@ -1,7 +1,9 @@
-from flask import Blueprint, render_template
+from flask import Blueprint
+from ThuVienSo.controller.borrow_controller import borrow_history_controller
 
-borrow_manage_bp = Blueprint('borrow_manage_bp', __name__)
+borrow_bp = Blueprint("borrow", __name__, url_prefix="/borrow")
 
-@borrow_manage_bp.route('/borrow/management')
-def borrow_management():
-    return render_template('borrow/manage.html')
+
+@borrow_bp.route("/history")
+def history():
+    return borrow_history_controller()
