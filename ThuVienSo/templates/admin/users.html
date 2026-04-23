@@ -1,0 +1,193 @@
+{% extends "layout/base.html" %}
+{% block title %}Quản lý người dùng - Thư Viện Số{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="users-page">
+    <div class="users-header">
+        <div>
+            <h1>Quản lý người dùng</h1>
+            <p>Quản lý tài khoản độc giả, thủ thư và admin trong hệ thống.</p>
+        </div>
+        <button class="btn-primary" onclick="toggleForm('add-user-form')">+ Thêm người dùng</button>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="user-form-card" id="add-user-form" style="display:none;">
+        <h2>Thêm người dùng mới</h2>
+        <form action="{{ url_for('admin_bp.user_create') }}" method="post">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Họ tên <span class="required">*</span></label>
+                    <input type="text" name="full_name" required>
+                </div>
+                <div class="form-group">
+                    <label>Username <span class="required">*</span></label>
+                    <input type="text" name="username" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Email <span class="required">*</span></label>
+                    <input type="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label>Số điện thoại</label>
+                    <input type="text" name="phone">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Mật khẩu <span class="required">*</span></label>
+                    <input type="password" name="password" required>
+                </div>
+                <div class="form-group">
+                    <label>Vai trò <span class="required">*</span></label>
+                    <select name="role_id" required>
+                        <option value="">-- Chọn vai trò --</option>
+                        {% for role in roles %}
+                            <option value="{{ role.id }}">{{ role.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Trạng thái</label>
+                <select name="status">
+                    {% for status in statuses %}
+                        <option value="{{ status }}">{{ status }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">Lưu</button>
+                <button type="button" class="btn-secondary" onclick="toggleForm('add-user-form')">Hủy</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="users-table-wrap">
+        <table class="users-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Họ tên</th>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>SĐT</th>
+                    <th>Vai trò</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if users %}
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td class="user-name">{{ user.full_name }}</td>
+                        <td>{{ user.username }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>{{ user.phone or '—' }}</td>
+                        <td><span class="role-badge">{{ user.role.name if user.role else '—' }}</span></td>
+                        <td><span class="status-badge-user status-{{ user.status or 'inactive' }}">{{ user.status or 'inactive' }}</span></td>
+                        <td class="user-actions">
+                            <button class="btn-edit" onclick="toggleEditUser({{ user.id }})">Sửa</button>
+                            <form action="{{ url_for('admin_bp.user_status', user_id=user.id) }}" method="post">
+                                <button type="submit" class="btn-secondary small-btn">
+                                    {% if user.status == 'active' %}Khóa{% else %}Mở khóa{% endif %}
+                                </button>
+                            </form>
+                            <form action="{{ url_for('admin_bp.user_delete', user_id=user.id) }}" method="post"
+                                  onsubmit="return confirm('Xóa người dùng \'{{ user.username }}\'?')">
+                                <button type="submit" class="btn-delete">Xóa</button>
+                            </form>
+                        </td>
+                    </tr>
+                    <tr class="edit-row" id="edit-user-{{ user.id }}" style="display:none;">
+                        <td colspan="8">
+                            <form action="{{ url_for('admin_bp.user_edit', user_id=user.id) }}" method="post" class="edit-inline-form">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Họ tên <span class="required">*</span></label>
+                                        <input type="text" name="full_name" value="{{ user.full_name }}" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Username <span class="required">*</span></label>
+                                        <input type="text" name="username" value="{{ user.username }}" required>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Email <span class="required">*</span></label>
+                                        <input type="email" name="email" value="{{ user.email }}" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Số điện thoại</label>
+                                        <input type="text" name="phone" value="{{ user.phone or '' }}">
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Mật khẩu mới</label>
+                                        <input type="password" name="password" placeholder="Để trống nếu không đổi">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Vai trò <span class="required">*</span></label>
+                                        <select name="role_id" required>
+                                            {% for role in roles %}
+                                                <option value="{{ role.id }}" {% if user.role_id == role.id %}selected{% endif %}>{{ role.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Trạng thái</label>
+                                    <select name="status">
+                                        {% for status in statuses %}
+                                            <option value="{{ status }}" {% if user.status == status %}selected{% endif %}>{{ status }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="form-actions">
+                                    <button type="submit" class="btn-primary">Cập nhật</button>
+                                    <button type="button" class="btn-secondary" onclick="toggleEditUser({{ user.id }})">Hủy</button>
+                                </div>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="8" class="empty-table">Chưa có người dùng nào.</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleForm(id) {
+    const el = document.getElementById(id);
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function toggleEditUser(userId) {
+    const row = document.getElementById('edit-user-' + userId);
+    row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+}
+</script>
+{% endblock %}

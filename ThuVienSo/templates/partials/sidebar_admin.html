@@ -1,0 +1,22 @@
+<div class="sidebar">
+
+<button class="menu-btn active" onclick="openSection(event, 'books')">        📚 Quản lý sách
+    </button>
+
+<button class="menu-btn" onclick="openSection(event, 'users')">
+        👤 Người dùng
+    </button>
+<a class="menu-link" href="{{ url_for('admin_bp.users') }}">Quản lý người dùng</a>
+
+<button class="menu-btn" onclick="openSection(event, 'borrow')">
+        🔄 Mượn trả
+    </button>
+
+<button class="menu-btn" onclick="openSection(event, 'report')">
+        📊 Báo cáo
+    </button>
+
+<button class="menu-btn" onclick="openSection(event, 'rules')">        ⚖️ Quy định
+    </button>
+
+</div>
