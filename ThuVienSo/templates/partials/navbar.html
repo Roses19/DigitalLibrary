@@ -27,10 +27,10 @@
                     <a href="{{ url_for('admin_bp.users') }}">Người dùng</a>
                 {% endif %}
                 <a href="#">{{ current_user.full_name or current_user.username }}</a>
-                <a href="{{ url_for('auth.logout') }}">Đăng xuất</a>
+                <a href="#">Đăng xuất</a>
             {% else %}
-                <a href="{{ url_for('auth.register') }}">Đăng ký</a>
-                <a href="{{ url_for('auth.login') }}">Đăng nhập</a>
+                <a href="#">Đăng ký</a>
+                <a href="#">Đăng nhập</a>
             {% endif %}
             <a href="#">🔔</a>
         </div>
