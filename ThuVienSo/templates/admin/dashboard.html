@@ -1,0 +1,59 @@
+{% extends "layout/base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+{% block content %}
+
+<div class="admin-layout">
+
+    <!-- SIDEBAR -->
+    {% include "partials/sidebar_admin.html" %}
+
+    <!-- CONTENT -->
+    <div class="admin-content">
+
+        <div id="books" class="section active">
+            <h2>Quản lý sách</h2>
+        </div>
+
+        <div id="users" class="section">
+            <h2>Người dùng</h2>
+        </div>
+
+        <div id="borrow" class="section">
+            {% include "borrow/manage.html" %}
+        </div>
+
+        <div id="report" class="section">
+            <h2>Báo cáo</h2>
+        </div>
+
+        <div id="rules" class="section">
+            <h2>Quy định</h2>
+        </div>
+
+    </div>
+
+</div>
+<script>
+function openSection(event, id) {
+
+    // ẩn tất cả section
+    document.querySelectorAll(".section").forEach(s => {
+        s.classList.remove("active");
+    });
+
+    // bỏ active sidebar
+    document.querySelectorAll(".menu-btn").forEach(b => {
+        b.classList.remove("active");
+    });
+
+    // hiện section được chọn
+    document.getElementById(id).classList.add("active");
+
+    // active button được click
+    event.currentTarget.classList.add("active");
+}
+</script>
+{% endblock %}

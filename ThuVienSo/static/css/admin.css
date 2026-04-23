@@ -1,0 +1,60 @@
+/* ===== LAYOUT ===== */
+.admin-layout {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+    width: 220px;
+    background: #1a3c5e;
+    color: white;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.sidebar-title {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+/* ===== MENU BUTTON ===== */
+.menu-btn {
+    background: transparent;
+    border: 1px solid #fff;
+    color: white;
+    padding: 10px;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: 0.2s;
+}
+
+.menu-btn:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+/* ACTIVE MENU */
+.menu-btn.active {
+    background: white;
+    color: #1a3c5e;
+    font-weight: bold;
+}
+
+/* ===== CONTENT ===== */
+.admin-content {
+    flex: 1;
+    padding: 20px;
+    background: #f5f7fa;
+}
+
+/* SECTION */
+.section {
+    display: none;
+}
+
+.section.active {
+    display: block;
+}
