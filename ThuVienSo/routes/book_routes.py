@@ -2,6 +2,7 @@ from flask import Blueprint
 from ThuVienSo.controller.book_controller import (
     search_books, get_book_detail,
     get_categories, create_category, update_category, delete_category,
+    get_book_list, get_admin_book_list, create_book, update_book, delete_book,
 )
 
 book_bp = Blueprint("book", __name__, url_prefix="/books")
@@ -35,3 +36,28 @@ def category_edit(category_id):
 @book_bp.route("/categories/<int:category_id>/delete", methods=["POST"])
 def category_delete(category_id):
     return delete_category(category_id)
+
+
+@book_bp.route("/list")
+def book_list():
+    return get_book_list()
+
+
+@book_bp.route("/admin")
+def admin_book_list():
+    return get_admin_book_list()
+
+
+@book_bp.route("/admin/create", methods=["POST"])
+def book_create():
+    return create_book()
+
+
+@book_bp.route("/admin/<int:book_id>/edit", methods=["POST"])
+def book_edit(book_id):
+    return update_book(book_id)
+
+
+@book_bp.route("/admin/<int:book_id>/delete", methods=["POST"])
+def book_delete(book_id):
+    return delete_book(book_id)

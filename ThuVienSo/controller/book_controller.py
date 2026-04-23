@@ -9,6 +9,7 @@ CATEGORIES = [
 ]
 
 _category_id_counter = 6
+_book_id_counter = 6
 
 BOOKS = [
     {
@@ -124,6 +125,139 @@ def delete_category(category_id):
     CATEGORIES.remove(cat)
     flash(f'Đã xóa danh mục "{cat["name"]}".', "success")
     return redirect(url_for("book.categories"))
+
+
+def get_book_list():
+    category_filter = request.args.get("category", "").strip()
+    if category_filter:
+        filtered = [b for b in BOOKS if b["category"] == category_filter]
+    else:
+        filtered = list(BOOKS)
+    return render_template(
+        "books/list.html",
+        books=filtered,
+        categories=CATEGORIES,
+        selected_category=category_filter,
+    )
+
+
+def get_admin_book_list():
+    category_filter = request.args.get("category", "").strip()
+    if category_filter:
+        filtered = [b for b in BOOKS if b["category"] == category_filter]
+    else:
+        filtered = list(BOOKS)
+    return render_template(
+        "books/list_admin.html",
+        books=filtered,
+        categories=CATEGORIES,
+        selected_category=category_filter,
+    )
+
+
+def create_book():
+    global _book_id_counter
+    title        = request.form.get("title", "").strip()
+    author       = request.form.get("author", "").strip()
+    category     = request.form.get("category", "").strip()
+    description  = request.form.get("description", "").strip()
+    cover        = request.form.get("cover", "").strip()
+    quantity_str = request.form.get("quantity", "1").strip()
+
+    if not title or not author or not category:
+        flash("Tên sách, tác giả và danh mục không được để trống.", "error")
+        return redirect(url_for("book.admin_book_list"))
+
+    try:
+        quantity = int(quantity_str)
+        if quantity < 0:
+            raise ValueError
+    except ValueError:
+        flash("Số lượng phải là số nguyên không âm.", "error")
+        return redirect(url_for("book.admin_book_list"))
+
+    if not cover:
+        cover = f"https://placehold.co/200x280?text={title[:10].replace(' ', '+')}"
+
+    BOOKS.append({
+        "id": _book_id_counter,
+        "title": title,
+        "author": author,
+        "category": category,
+        "description": description,
+        "cover": cover,
+        "quantity": quantity,
+    })
+
+    cat = next((c for c in CATEGORIES if c["name"] == category), None)
+    if cat:
+        cat["book_count"] += 1
+
+    _book_id_counter += 1
+    flash(f'Đã thêm sách "{title}".', "success")
+    return redirect(url_for("book.admin_book_list"))
+
+
+def update_book(book_id):
+    book = next((b for b in BOOKS if b["id"] == book_id), None)
+    if book is None:
+        flash("Không tìm thấy sách.", "error")
+        return redirect(url_for("book.admin_book_list"))
+
+    title        = request.form.get("title", "").strip()
+    author       = request.form.get("author", "").strip()
+    category     = request.form.get("category", "").strip()
+    description  = request.form.get("description", "").strip()
+    cover        = request.form.get("cover", "").strip()
+    quantity_str = request.form.get("quantity", "0").strip()
+
+    if not title or not author or not category:
+        flash("Tên sách, tác giả và danh mục không được để trống.", "error")
+        return redirect(url_for("book.admin_book_list"))
+
+    try:
+        quantity = int(quantity_str)
+        if quantity < 0:
+            raise ValueError
+    except ValueError:
+        flash("Số lượng phải là số nguyên không âm.", "error")
+        return redirect(url_for("book.admin_book_list"))
+
+    old_category = book["category"]
+    if old_category != category:
+        old_cat = next((c for c in CATEGORIES if c["name"] == old_category), None)
+        new_cat = next((c for c in CATEGORIES if c["name"] == category), None)
+        if old_cat and old_cat["book_count"] > 0:
+            old_cat["book_count"] -= 1
+        if new_cat:
+            new_cat["book_count"] += 1
+
+    book.update({
+        "title": title,
+        "author": author,
+        "category": category,
+        "description": description,
+        "cover": cover or book["cover"],
+        "quantity": quantity,
+    })
+
+    flash(f'Đã cập nhật sách "{title}".', "success")
+    return redirect(url_for("book.admin_book_list"))
+
+
+def delete_book(book_id):
+    book = next((b for b in BOOKS if b["id"] == book_id), None)
+    if book is None:
+        flash("Không tìm thấy sách.", "error")
+        return redirect(url_for("book.admin_book_list"))
+
+    cat = next((c for c in CATEGORIES if c["name"] == book["category"]), None)
+    if cat and cat["book_count"] > 0:
+        cat["book_count"] -= 1
+
+    BOOKS.remove(book)
+    flash(f'Đã xóa sách "{book["title"]}".', "success")
+    return redirect(url_for("book.admin_book_list"))
 
 
 def get_home_books():
