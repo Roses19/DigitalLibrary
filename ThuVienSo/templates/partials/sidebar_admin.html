@@ -1,23 +1,44 @@
-<div class="sidebar">
+<aside class="admin-sidebar">
 
-<button class="menu-btn active" onclick="openSection(event, 'books')">        📚 Quản lý sách
+    <button type="button"
+            class="admin-sidebar-link {% if active_tab|default('users') == 'books' %}active{% endif %}"
+            onclick="window.location.href='/admin?tab=books'">
+        <span class="sidebar-icon">📚</span>
+        <span>Quản lý sách</span>
     </button>
 
-<button class="menu-btn" onclick="openSection(event, 'users')">
-        👤 Người dùng
+    <button type="button"
+            class="admin-sidebar-link {% if active_tab|default('users') == 'users' %}active{% endif %}"
+            onclick="window.location.href='/admin?tab=users'">
+        <span class="sidebar-icon">👤</span>
+        <span>Quản lý người dùng</span>
     </button>
-<a class="menu-link" href="{{ url_for('admin_bp.users') }}">Quản lý người dùng</a>
-
-<button class="menu-btn" onclick="openSection(event, 'borrow')">
-        🔄 Mượn trả
-    </button>
-<a class="menu-link" href="{{ url_for('borrow.lookup') }}">Tra cứu lịch sử</a>
-
-<button class="menu-btn" onclick="openSection(event, 'report')">
-        📊 Báo cáo
-    </button>
-
-<button class="menu-btn" onclick="openSection(event, 'rules')">        ⚖️ Quy định
+    <button type="button"
+            class="admin-sidebar-link {% if active_tab|default('users') == 'borrow_lookup' %}active{% endif %}"
+            onclick="window.location.href='{{ url_for('borrow.lookup') }}'">
+        <span class="sidebar-icon">🔍</span>
+        <span>Tra cứu lịch sử</span>
     </button>
 
-</div>
+    <button type="button"
+            class="admin-sidebar-link {% if active_tab|default('users') == 'borrow' %}active{% endif %}"
+            onclick="window.location.href='/admin?tab=borrow'">
+        <span class="sidebar-icon">🔄</span>
+        <span>Mượn trả</span>
+    </button>
+
+    <button type="button"
+            class="admin-sidebar-link {% if active_tab|default('users') == 'report' %}active{% endif %}"
+            onclick="window.location.href='/admin?tab=report'">
+        <span class="sidebar-icon">📊</span>
+        <span>Báo cáo</span>
+    </button>
+
+    <button type="button"
+            class="admin-sidebar-link {% if active_tab|default('users') == 'rules' %}active{% endif %}"
+            onclick="window.location.href='/admin?tab=rules'">
+        <span class="sidebar-icon">⚖️</span>
+        <span>Quy định</span>
+    </button>
+
+</aside>

@@ -29,5 +29,5 @@ instance/
 .env
 .venv/
 
-# Tài liệu nội bộ (không đưa lên git)
+# Private docs
 docs_private/
