@@ -1,0 +1,36 @@
+.tab-panel {
+    display: none;
+}
+
+.tab-panel.active {
+    display: block;
+}/* ===== TAB HEADER ===== */
+.tab-header {
+    display: flex;
+    border-bottom: 2px solid #1a3c5e;
+    margin-bottom: 15px;
+}
+
+/* ===== TAB NORMAL (chưa click) ===== */
+.tab-btn {
+    padding: 10px 16px;
+    background: #fff;
+    color: #1a3c5e;
+    border: 1.5px solid #1a3c5e;
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.2s;
+}
+
+/* hover nhẹ */
+.tab-btn:hover {
+    background: #eaf2fb;
+}
+
+/* ===== TAB ACTIVE (đang chọn) ===== */
+.tab-btn.active {
+    background: #1a3c5e;
+    color: #fff;
+}

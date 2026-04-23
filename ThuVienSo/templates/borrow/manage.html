@@ -1,0 +1,162 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Quản lý mượn trả sách{% endblock %}
+
+{% block content %}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/borrow.css') }}">
+{% endblock %}
+<div class="container mt-4">
+
+    <h2 class="mb-3">Quản lý mượn trả sách</h2>
+
+    <!-- TAB BUTTONS -->
+    <div class="tab-header mb-3">
+        <button class="tab-btn active" onclick="openTab(event, 'request')">Yêu cầu mượn sách</button>
+        <button class="tab-btn" onclick="openTab(event, 'accepted')">Đã chấp nhận</button>
+        <button class="tab-btn" onclick="openTab(event, 'rejected')">Đã từ chối</button>
+        <button class="tab-btn" onclick="openTab(event, 'canceled')">Đã hủy</button>
+        <button class="tab-btn" onclick="openTab(event, 'returned')">Đã trả</button>
+    </div>
+
+    <!-- ================= TAB 1: REQUEST ================= -->
+    <div id="request" class="tab-panel active">
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>MSSV</th>
+                    <th>ID sách</th>
+                    <th>Tên sách</th>
+                    <th>Ngày mượn</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                <tr>
+                    <td>SV001</td>
+                    <td>B001</td>
+                    <td>Lập trình Python</td>
+                    <td>20/04/2026</td>
+                    <td>
+                        <button class="btn btn-success btn-sm">Chấp nhận</button>
+                        <button class="btn btn-danger btn-sm">Từ chối</button>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>SV002</td>
+                    <td>B002</td>
+                    <td>Cơ sở dữ liệu</td>
+                    <td>21/04/2026</td>
+                    <td>
+                        <button class="btn btn-success btn-sm">Chấp nhận</button>
+                        <button class="btn btn-danger btn-sm">Từ chối</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ================= TAB 2: ACCEPTED ================= -->
+    <div id="accepted" class="tab-panel">
+
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>MSSV</th>
+                    <th>ID sách</th>
+                    <th>Tên sách</th>
+                    <th>Ngày mượn</th>
+                    <th>Trạng thái</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                <tr>
+                    <td>SV003</td>
+                    <td>B003</td>
+                    <td>Python nâng cao</td>
+                    <td>18/04/2026</td>
+                    <td><span class="badge bg-success">Đã chấp nhận</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+    </div>
+
+    <!-- ================= TAB 3: REJECTED ================= -->
+    <div id="rejected" class="tab-panel">
+
+        <table class="table table-bordered">
+            <tr>
+                <th>MSSV</th><th>ID sách</th><th>Tên sách</th><th>Ngày mượn</th><th>Trạng thái</th>
+            </tr>
+            <tr>
+                <td>SV004</td>
+                <td>B004</td>
+                <td>Java cơ bản</td>
+                <td>19/04/2026</td>
+                <td><span class="badge bg-danger">Đã từ chối</span></td>
+            </tr>
+        </table>
+
+    </div>
+
+    <!-- ================= TAB 4: CANCELED ================= -->
+    <div id="canceled" class="tab-panel">
+
+        <table class="table table-bordered">
+            <tr>
+                <th>MSSV</th><th>ID sách</th><th>Tên sách</th><th>Ngày mượn</th><th>Trạng thái</th>
+            </tr>
+            <tr>
+                <td>SV005</td>
+                <td>B005</td>
+                <td>Web Flask</td>
+                <td>17/04/2026</td>
+                <td><span class="badge bg-secondary">Đã hủy</span></td>
+            </tr>
+        </table>
+
+    </div>
+
+    <!-- ================= TAB 5: RETURNED ================= -->
+    <div id="returned" class="tab-panel">
+
+        <table class="table table-bordered">
+            <tr>
+                <th>MSSV</th><th>ID sách</th><th>Tên sách</th><th>Ngày mượn</th><th>Trạng thái</th>
+            </tr>
+            <tr>
+                <td>SV006</td>
+                <td>B006</td>
+                <td>SQL nâng cao</td>
+                <td>10/04/2026</td>
+                <td><span class="badge bg-primary">Đã trả</span></td>
+            </tr>
+        </table>
+
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openTab(event, tabId) {
+
+    document.querySelectorAll(".tab-panel").forEach(t => {
+        t.classList.remove("active");
+    });
+
+    document.querySelectorAll(".tab-btn").forEach(b => {
+        b.classList.remove("active");
+    });
+
+    document.getElementById(tabId).classList.add("active");
+    event.currentTarget.classList.add("active");
+}
+</script>
+{% endblock %}
