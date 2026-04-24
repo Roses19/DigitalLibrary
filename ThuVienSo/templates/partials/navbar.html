@@ -19,7 +19,6 @@
 
         <!-- RIGHT -->
         <div class="navbar-user">
-            <a href="#">🔔</a>
 
             {% if current_user.is_authenticated %}
                 <!-- USER DROPDOWN -->
@@ -46,22 +45,18 @@
                     </div>
                 </div>
 
-                <!-- ROLE -->
                 {% set role_name = (current_user.role.name if current_user.role else '')|lower %}
 
                 {% if role_name in ['admin', 'quản trị', 'quản trị viên', 'thủ thư', 'librarian'] %}
                     <a href="{{ url_for('admin_bp.admin_dashboard') }}">Quản lý</a>
                 {% endif %}
 
-<!--                {% if role_name in ['admin', 'quản trị', 'quản trị viên'] %}-->
-<!--                    <a href="{{ url_for('admin_bp.users') }}">Người dùng</a>-->
-<!--                {% endif %}-->
-
             {% else %}
-                <!-- CHƯA LOGIN -->
-                <a href="{{ url_for('auth.login') }}">Đăng nhập</a>
                 <a href="{{ url_for('auth.register') }}">Đăng ký</a>
+                <a href="{{ url_for('auth.login') }}">Đăng nhập</a>
             {% endif %}
+
+            <a href="#">🔔</a>
         </div>
     </div>
 </nav>
