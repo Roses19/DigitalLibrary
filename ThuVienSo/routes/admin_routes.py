@@ -1,5 +1,10 @@
 from flask import Blueprint, render_template
-
+from sqlalchemy.orm import joinedload
+from ThuVienSo.data.models.book import Book
+from ThuVienSo.data.models.book_copy import BookCopy
+from ThuVienSo.data.models.category import Category
+from ThuVienSo.data.models.publisher import Publisher
+from ThuVienSo.data.models.branch import Branch
 from ThuVienSo.controller.admin_controller import (
     list_users,
     create_user,
@@ -20,10 +25,30 @@ def admin_dashboard():
     users = User.query.order_by(User.id.asc()).all()
     roles = Role.query.order_by(Role.id.asc()).all()
 
+
+    # BOOKS (🔥 QUAN TRỌNG)
+    books = Book.query.options(
+        joinedload(Book.copies).joinedload(BookCopy.branch),
+        joinedload(Book.category),
+        joinedload(Book.publisher)
+    ).order_by(Book.id.desc()).all()
+
+    categories = Category.query.all()
+    publishers = Publisher.query.all()
+    branches = Branch.query.all()
+
     return render_template(
         "admin/dashboard.html",
         users=users,
-        roles=roles
+        roles=roles,
+
+        # 👇 thêm mấy cái này
+        books=books,
+        categories=categories,
+        publishers=publishers,
+        branches=branches,
+
+        active_section="books"  # mặc định mở tab books
     )
 
 
@@ -51,3 +76,4 @@ def user_status(user_id):
 @admin_bp.route("/admin/users/<int:user_id>/delete", methods=["POST"])
 def user_delete(user_id):
     return delete_user(user_id)
+

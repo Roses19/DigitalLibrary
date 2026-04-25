@@ -13,23 +13,20 @@
     {% if book %}
         <div class="book-detail-card">
 
+            <!-- COVER -->
             <div class="book-detail-cover">
                 {% if book.cover_image %}
                     <img src="{{ book.cover_image }}" alt="{{ book.title }}">
                 {% else %}
-                    <img src="{{ url_for('static', filename='images/books/default-book.png') }}" alt="{{ book.title }}">
+                    <img src="{{ url_for('static', filename='images/books/default-book.png') }}">
                 {% endif %}
             </div>
 
+            <!-- INFO -->
             <div class="book-detail-info">
                 <h1>{{ book.title }}</h1>
 
-                <div class="book-detail-actions">
 
-                    <a href="#" class="detail-tab borrow">
-                        Mượn sách
-                    </a>
-                </div>
 
                 <table class="book-info-table">
                     <tr>
@@ -44,55 +41,91 @@
 
                     <tr>
                         <td>Thể loại</td>
-                        <td>{{ book.category.name }}</td>
+                        <td>{{ book.category.name if book.category else '-' }}</td>
                     </tr>
 
                     <tr>
                         <td>Nhà xuất bản</td>
-                        <td>{{ book.publisher.name }}</td>
+                        <td>{{ book.publisher.name if book.publisher else '-' }}</td>
                     </tr>
 
                     <tr>
                         <td>ISBN</td>
-                        <td>{{ book.isbn }}</td>
+                        <td>{{ book.isbn or '-' }}</td>
                     </tr>
 
                     <tr>
                         <td>Số trang</td>
-                        <td>{{ book.pages }}</td>
+                        <td>{{ book.pages or '-' }}</td>
                     </tr>
 
                     <tr>
                         <td>Năm xuất bản</td>
-                        <td>{{ book.publish_year }}</td>
+                        <td>{{ book.publish_year or '-' }}</td>
                     </tr>
 
                     <tr>
                         <td>Ngôn ngữ</td>
-                        <td>{{ book.language }}</td>
-                    </tr>
-
-                    <tr>
-                        <td>Vị trí kệ</td>
-                        <td>{{ book.shelf_location }}</td>
-                    </tr>
-
-                    <tr>
-                        <td>Tình trạng</td>
-                        <td>
-                            {% if book.available_quantity > 0 %}
-                                <span class="status-badge available">
-                                    Còn {{ book.available_quantity }}/{{ book.total_quantity }} cuốn
-                                </span>
-                            {% else %}
-                                <span class="status-badge unavailable">
-                                    Đã hết sách
-                                </span>
-                            {% endif %}
-                        </td>
+                        <td>{{ book.language or '-' }}</td>
                     </tr>
                 </table>
 
+                <!-- 🔥 CHI NHÁNH + KỆ + SỐ LƯỢNG -->
+                <div class="book-copies-section">
+                    <h3>Thông tin lưu trữ</h3>
+
+                    <table class="book-info-table">
+                        <tr>
+                            <th>Chi nhánh</th>
+                            <th>Kệ</th>
+                            <th>Tình trạng</th>
+                        </tr>
+
+                        {% for copy in book.copies %}
+                        <tr>
+                            <td>{{ copy.branch.name if copy.branch else '-' }}</td>
+                            <td>{{ copy.shelf_location or '-' }}</td>
+                            <td>
+    {% if copy.available_quantity > 0 %}
+        <span class="status-badge available">
+            {{ copy.available_quantity }}/{{ copy.total_quantity }}
+        </span>
+
+        <!-- ✅ NÚT MƯỢN THEO CHI NHÁNH -->
+        <a href="#"
+           class="detail-tab borrow">
+            Mượn
+        </a>
+
+    {% else %}
+        <span class="status-badge unavailable">
+            Hết
+        </span>
+    {% endif %}
+</td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+
+
+
+              <div class="book-summary">
+    <strong>Tổng:</strong>
+
+    {% if available > 0 %}
+        <span class="status-badge available">
+            Còn {{ available }}/{{ total }} cuốn
+        </span>
+
+    {% else %}
+        <span class="status-badge unavailable">
+            Đã hết sách
+        </span>
+    {% endif %}
+</div>
+
+                <!-- DESCRIPTION -->
                 <div class="book-description">
                     <h3>Mô tả sách</h3>
                     <p>{{ book.description or "Chưa có mô tả cho sách này." }}</p>

@@ -1,0 +1,120 @@
+/* ===== BOOK PAGE ===== */
+.books-page {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 1.5rem;
+}
+
+/* HEADER giống users nhưng chỉnh nhẹ */
+.books-header h1 {
+    color: #1a3c5e;
+    margin-bottom: 0.25rem;
+}
+
+.books-header p {
+    color: #666;
+}
+
+/* ===== BOOK BADGES ===== */
+.branch-badge {
+    display: inline-block;
+    padding: 0.25rem 0.7rem;
+    border-radius: 12px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    background-color: #e8f0f8;
+    color: #2e6da4;
+}
+
+/* ===== QUANTITY ===== */
+.qty-cell {
+    font-weight: 600;
+}
+
+/* còn sách */
+.qty-available {
+    color: #166534;
+}
+
+/* hết sách */
+.qty-empty {
+    color: #dc3545;
+}
+
+/* ===== STATUS CHIP ===== */
+.status-chip {
+    display: inline-block;
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.status-chip.available {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.status-chip.unavailable {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+/* ===== BOOK TITLE ===== */
+.book-title {
+    font-weight: 700;
+    color: #1a3c5e;
+}
+
+/* ===== TABLE TWEAK ===== */
+.books-table td {
+    vertical-align: middle;
+}
+
+/* hover nhẹ hơn user */
+.books-table tbody tr:hover {
+    background-color: #f4f8fc;
+}
+
+/* ===== FORM ===== */
+.book-form-card {
+    background: #fff;
+    border: 1px solid #d0e4f5;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+
+.book-form-card h2 {
+    color: #1a3c5e;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+}
+
+/* ===== COPY ROW (edit) ===== */
+.copy-edit-row td {
+    background-color: #f0f7ff;
+}
+
+/* ===== SMALL IMPROVEMENTS ===== */
+td {
+    font-size: 0.92rem;
+}
+
+/* button spacing */
+.user-actions button,
+.user-actions form {
+    margin-right: 4px;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .books-page {
+        padding: 0 1rem;
+    }
+
+    .books-table-wrap {
+        overflow-x: auto;
+    }
+}

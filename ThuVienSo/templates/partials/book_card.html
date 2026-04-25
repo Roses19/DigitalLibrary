@@ -1,14 +1,17 @@
 <div class="book-card">
-    <div class="book-cover-wrapper">
-        {% if book.cover_image %}
-            <img src="{{ book.cover_image }}" alt="{{ book.title }}" class="book-card-cover">
-        {% else %}
-            <img src="{{ url_for('static', filename='images/books/default-book.png') }}" alt="{{ book.title }}" class="book-card-cover">
-        {% endif %}
 
-        <span class="book-status-badge {% if book.available_quantity > 0 %}available{% else %}unavailable{% endif %}">
-            {% if book.available_quantity > 0 %}
-                Còn sách
+    {% set total = book.copies | sum(attribute='total_quantity') %}
+    {% set available = book.copies | sum(attribute='available_quantity') %}
+
+    <div class="book-cover-wrapper">
+
+{% if book.cover_image %}
+        <img src="{{ book.cover_image }}" alt="{{ book.title }}" class="book-card-cover">
+        {% else %} <img src="{{ url_for('static', filename='images/books/default-book.png') }}"
+                        alt="{{ book.title }}" class="book-card-cover"> {% endif %}
+        <span class="book-status-badge {{ 'available' if available > 0 else 'unavailable' }}">
+            {% if available > 0 %}
+                Còn {{ available }}/{{ total }}
             {% else %}
                 Đã hết
             {% endif %}
@@ -19,17 +22,21 @@
         <h3 class="book-card-title">{{ book.title }}</h3>
 
         <p class="book-card-author">
-            {{ book.authors | map(attribute='name') | join(', ') }}
+            {{ book.authors | map(attribute='name') | join(', ') or 'Chưa có tác giả' }}
         </p>
 
         <div class="book-card-actions">
-            <a href="{{ url_for('book.detail', book_id=book.id) }}" class="btn-detail">
+
+            <a href="{{ url_for('book.detail', book_id=book.id) }}"
+               class="btn-detail">
                 Xem chi tiết
             </a>
 
-            <a href=#" class="btn-borrow">
-                Mượn sách
-            </a>
+<!--            <a href="#"-->
+<!--               class="btn-borrow {{ 'disabled' if available <= 0 else '' }}">-->
+<!--                Mượn sách-->
+<!--            </a>-->
+
         </div>
     </div>
 </div>

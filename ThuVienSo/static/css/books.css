@@ -429,7 +429,19 @@
     border-radius: 14px;
     text-align: center;
 }
+.detail-tab.borrow {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    text-decoration: none;
+    font-weight: 600;
+    margin-left: 15px;
+}
 
+.detail-tab.borrow:hover {
+    opacity: 0.9;
+}
 @media (max-width: 900px) {
     .book-detail-card {
         grid-template-columns: 1fr;

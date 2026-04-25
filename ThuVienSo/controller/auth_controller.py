@@ -13,7 +13,7 @@ def register_controller():
         username = request.form['username']
         full_name=request.form['full_name']
         password = request.form['password']
-        role_name = request.form['role']
+        role_name = "Độc giả"
         email = request.form['email']
         phone = request.form['phonenumber']
 
@@ -34,7 +34,7 @@ def register_controller():
         new_user = User(
             username=username,
             full_name=full_name,
-            password_hash=hashed_password,
+            password_hash=password,
             email=email,
             phone=phone,
             role_id=role.id,
@@ -52,19 +52,17 @@ def login_controller():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        role_name = request.form['role']
         user = User.query.filter_by(username=username).first()
-
-        if user and user.check_password(password) and user.role.name == role_name:
+        if user and user.check_password(password):
             session['username'] = username
-            session['role'] = role_name
             login_user(user)
 
-            if role_name == 'Quản trị':
+            session['role'] = user.role.name
+            if user.role.name == 'Quản trị':
                 return redirect(url_for('admin_bp.admin_dashboard'))
-            elif role_name == 'Thủ thư':
+            elif user.role.name == 'Thủ thư':
                 return redirect(url_for('staff_page'))
-            elif role_name == 'Độc giả':
+            else:
                 return redirect(url_for('home.index'))
 
         flash('Sai thông tin đăng nhập!', 'danger')

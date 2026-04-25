@@ -1,10 +1,12 @@
-{% block content %}
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/borrow.css') }}">
 {% endblock %}
+{% block content %}
+
 <div class="container mt-4">
 
-    <h2 class="mb-3">Quản lý mượn trả sách</h2>
+    <h1 class="mb-3" style="color: #1a3c5e;
+    margin-bottom: 0.25rem;">Quản lý mượn trả sách</h1>
 
     <!-- TAB BUTTONS -->
     <div class="tab-header mb-3">

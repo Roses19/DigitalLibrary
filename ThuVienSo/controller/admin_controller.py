@@ -1,13 +1,15 @@
 from flask import render_template, request, redirect, url_for, flash
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload
 from werkzeug.security import generate_password_hash
 
 from ThuVienSo import db
+from ThuVienSo.data.models.book import Book
 from ThuVienSo.data.models.role import Role
 from ThuVienSo.data.models.user import User
 
 USER_STATUSES = ["active", "locked", "inactive"]
-
+BOOK_STATUSES = ["available", "out_of_stock"]
 
 def _role_name(user):
     return (user.role.name if user and user.role else "").strip().lower()
@@ -28,7 +30,17 @@ def _is_last_admin(user):
 
 
 def admin_dashboard():
-    return render_template("admin/dashboard.html")
+    books = (
+        Book.query
+        .options(joinedload(Book.copies))
+        .order_by(Book.created_at.desc())
+        .all()
+    )
+
+    return render_template(
+        "admin/dashboard.html",
+        books=books
+    )
 
 
 def list_users():
@@ -185,3 +197,4 @@ def delete_user(user_id):
         db.session.rollback()
         flash("Không thể xóa người dùng vì có dữ liệu liên quan. Hãy khóa tài khoản thay thế.", "error")
     return redirect(url_for("admin_bp.users"))
+
