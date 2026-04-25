@@ -1,0 +1,160 @@
+{% block content %}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/borrow.css') }}">
+{% endblock %}
+
+<div class="container mt-4">
+    <h2 class="mb-3">Quản lý mượn trả sách</h2>
+
+    <!-- TAB BUTTONS -->
+    <div class="tab-header mb-3">
+        <button class="tab-btn active" onclick="openTab(event, 'borrowing')">Đang mượn</button>
+        <button class="tab-btn" onclick="openTab(event, 'returned')">Đã trả</button>
+    </div>
+
+    <!-- ================= TAB 1: ĐANG MƯỢN ================= -->
+    <div id="borrowing" class="tab-panel active">
+        {% if active_records %}
+        <table class="table table-bordered table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>#</th>
+                    <th>Độc giả</th>
+                    <th>Sách mượn</th>
+                    <th>Ngày mượn</th>
+                    <th>Hạn trả</th>
+                    <th>Trạng thái</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in active_records %}
+                {% set is_overdue = record.due_date and record.due_date < now %}
+                <tr class="{{ 'table-danger' if is_overdue else '' }}">
+                    <td>{{ record.id }}</td>
+                    <td>
+                        <strong>{{ record.user.full_name }}</strong><br>
+                        <small class="text-muted">{{ record.user.username }}</small>
+                    </td>
+                    <td>
+                        <ul class="mb-0 ps-3">
+                            {% for item in record.items %}
+                            <li>{{ item.book.title }} <span class="text-muted">(x{{ item.quantity }})</span></li>
+                            {% endfor %}
+                        </ul>
+                    </td>
+                    <td>{{ record.borrow_date.strftime('%d/%m/%Y') if record.borrow_date else '—' }}</td>
+                    <td>
+                        {{ record.due_date.strftime('%d/%m/%Y') if record.due_date else '—' }}
+                        {% if is_overdue %}
+                            <span class="badge bg-danger ms-1">Quá hạn</span>
+                        {% endif %}
+                    </td>
+                    <td><span class="badge bg-warning text-dark">Đang mượn</span></td>
+                    <td>
+                        <button type="button"
+                                class="btn btn-success btn-sm"
+                                data-bs-toggle="modal"
+                                data-bs-target="#returnModal{{ record.id }}">
+                            Xác nhận trả
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- MODAL XÁC NHẬN TRẢ TỪNG PHIẾU -->
+        {% for record in active_records %}
+        <div class="modal fade" id="returnModal{{ record.id }}" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Xác nhận trả sách — Phiếu #{{ record.id }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form method="POST" action="{{ url_for('borrow.return_book', record_id=record.id) }}">
+                        <div class="modal-body">
+                            <p><strong>Độc giả:</strong> {{ record.user.full_name }} ({{ record.user.username }})</p>
+                            <p><strong>Sách:</strong></p>
+                            <ul>
+                                {% for item in record.items %}
+                                <li>{{ item.book.title }} — {{ item.quantity }} quyển</li>
+                                {% endfor %}
+                            </ul>
+                            <div class="mb-3">
+                                <label class="form-label">Ghi chú (tuỳ chọn)</label>
+                                <textarea name="note" class="form-control" rows="2"
+                                          placeholder="VD: sách bị rách trang..."></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Huỷ</button>
+                            <button type="submit" class="btn btn-success">Xác nhận trả</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        {% else %}
+        <div class="alert alert-info">Không có phiếu mượn nào đang hoạt động.</div>
+        {% endif %}
+    </div>
+
+    <!-- ================= TAB 2: ĐÃ TRẢ ================= -->
+    <div id="returned" class="tab-panel">
+        {% if returned_records %}
+        <table class="table table-bordered table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>#</th>
+                    <th>Độc giả</th>
+                    <th>Sách</th>
+                    <th>Ngày mượn</th>
+                    <th>Ngày trả</th>
+                    <th>Người xử lý</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in returned_records %}
+                {% set ret = record.return_records.order_by('id').first() %}
+                <tr>
+                    <td>{{ record.id }}</td>
+                    <td>
+                        <strong>{{ record.user.full_name }}</strong><br>
+                        <small class="text-muted">{{ record.user.username }}</small>
+                    </td>
+                    <td>
+                        <ul class="mb-0 ps-3">
+                            {% for item in record.items %}
+                            <li>{{ item.book.title }}</li>
+                            {% endfor %}
+                        </ul>
+                    </td>
+                    <td>{{ record.borrow_date.strftime('%d/%m/%Y') if record.borrow_date else '—' }}</td>
+                    <td>{{ ret.return_date.strftime('%d/%m/%Y') if ret else '—' }}</td>
+                    <td>{{ ret.processor.full_name if ret and ret.processor else '—' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="alert alert-info">Chưa có phiếu trả nào.</div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openTab(event, tabId) {
+    document.querySelectorAll(".tab-panel").forEach(t => t.classList.remove("active"));
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.getElementById(tabId).classList.add("active");
+    event.currentTarget.classList.add("active");
+}
+</script>
+{% endblock %}

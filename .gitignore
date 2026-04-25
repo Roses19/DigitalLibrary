@@ -27,3 +27,7 @@ Thumbs.db
 # Flask
 instance/
 .env
+.venv/
+
+# Tài liệu nội bộ (không đưa lên git)
+docs_private/
