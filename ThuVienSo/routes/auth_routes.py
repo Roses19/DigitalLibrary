@@ -14,3 +14,4 @@ def login():
 @auth.route('/logout')
 def logout():
     return logout_controller()
+

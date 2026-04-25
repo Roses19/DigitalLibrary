@@ -61,7 +61,7 @@ def login_controller():
             login_user(user)
 
             if role_name == 'Quản trị':
-                return redirect(url_for('admin_page'))
+                return redirect(url_for('admin_bp.admin_dashboard'))
             elif role_name == 'Thủ thư':
                 return redirect(url_for('staff_page'))
             elif role_name == 'Độc giả':

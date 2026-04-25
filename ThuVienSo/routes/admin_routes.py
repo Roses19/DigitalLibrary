@@ -42,7 +42,7 @@ def user_status(user_id):
 def user_delete(user_id):
     return delete_user(user_id)
 
-admin_bp = Blueprint('admin_bp', __name__)
+
 
 @admin_bp.route('/admin')
 def admin_dashboard():
