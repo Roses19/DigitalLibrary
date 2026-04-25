@@ -11,6 +11,7 @@ def get_home_books():
     return Book.query.order_by(Book.created_at.desc()).limit(4).all()
 
 
+
 # ================== CATEGORY ==================
 def get_categories():
     categories = Category.query.all()
@@ -202,3 +203,96 @@ def get_book_detail(book_id):
         return render_template("books/detail.html", book=None)
 
     return render_template("books/detail.html", book=book)
+
+# ================== BOOK LIST ==================
+def get_book_list():
+    books = Book.query.order_by(Book.created_at.desc()).all()
+    return render_template("books/list.html", books=books)
+
+
+# ================== ADMIN BOOK LIST ==================
+def get_admin_book_list():
+    books = Book.query.order_by(Book.created_at.desc()).all()
+    categories = Category.query.all()
+    publishers = Publisher.query.all()
+
+    return render_template(
+        "admin/books/index.html",
+        books=books,
+        categories=categories,
+        publishers=publishers
+    )
+
+
+# ================== CREATE BOOK ==================
+def create_book():
+    title = request.form.get("title", "").strip()
+    isbn = request.form.get("isbn", "").strip()
+    category_id = request.form.get("category_id")
+    publisher_id = request.form.get("publisher_id")
+    quantity = request.form.get("quantity", 0)
+
+    if not title:
+        flash("Tên sách không được để trống", "error")
+        return redirect(url_for("book.get_admin_book_list"))
+
+    new_book = Book(
+        title=title,
+        isbn=isbn,
+        category_id=int(category_id) if category_id else None,
+        publisher_id=int(publisher_id) if publisher_id else None,
+        quantity=int(quantity),
+        available_quantity=int(quantity)
+    )
+
+    db.session.add(new_book)
+    db.session.commit()
+
+    flash("Thêm sách thành công", "success")
+    return redirect(url_for("book.get_admin_book_list"))
+
+
+# ================== UPDATE BOOK ==================
+def update_book(book_id):
+    book = Book.query.get(book_id)
+
+    if not book:
+        flash("Không tìm thấy sách", "error")
+        return redirect(url_for("book.get_admin_book_list"))
+
+    book.title = request.form.get("title", "").strip()
+    book.isbn = request.form.get("isbn", "").strip()
+
+    category_id = request.form.get("category_id")
+    publisher_id = request.form.get("publisher_id")
+    quantity = request.form.get("quantity", 0)
+
+    book.category_id = int(category_id) if category_id else None
+    book.publisher_id = int(publisher_id) if publisher_id else None
+
+    # cập nhật số lượng
+    book.quantity = int(quantity)
+
+    # optional: sync available
+    if book.available_quantity > book.quantity:
+        book.available_quantity = book.quantity
+
+    db.session.commit()
+
+    flash("Cập nhật sách thành công", "success")
+    return redirect(url_for("book.get_admin_book_list"))
+
+
+# ================== DELETE BOOK ==================
+def delete_book(book_id):
+    book = Book.query.get(book_id)
+
+    if not book:
+        flash("Không tìm thấy sách", "error")
+        return redirect(url_for("book.get_admin_book_list"))
+
+    db.session.delete(book)
+    db.session.commit()
+
+    flash("Xóa sách thành công", "success")
+    return redirect(url_for("book.get_admin_book_list"))

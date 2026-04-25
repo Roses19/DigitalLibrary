@@ -1,0 +1,209 @@
+{% extends "layout/base.html" %}
+{% block title %}Quản lý Sách - Thư Viện Số{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/books.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="book-list-page">
+
+    <!-- Header -->
+    <div class="admin-list-header">
+        <h1>Quản lý Sách</h1>
+        <button class="btn-primary" onclick="toggleForm('add-book-form')">+ Thêm sách</button>
+    </div>
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Form thêm sách -->
+    <div class="book-form-card" id="add-book-form" style="display:none;">
+        <h2>Thêm sách mới</h2>
+        <form action="{{ url_for('book.book_create') }}" method="post">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Tên sách <span class="required">*</span></label>
+                    <input type="text" name="title" placeholder="VD: Lập trình Python" required>
+                </div>
+                <div class="form-group">
+                    <label>Tác giả <span class="required">*</span></label>
+                    <input type="text" name="author" placeholder="VD: Nguyễn Văn A" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Danh mục <span class="required">*</span></label>
+                    <select name="category" required>
+                        <option value="">-- Chọn danh mục --</option>
+                        {% for cat in categories %}
+                            <option value="{{ cat.name }}">{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Số lượng</label>
+                    <input type="number" name="quantity" value="1" min="0">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>URL ảnh bìa</label>
+                <input type="text" name="cover" placeholder="https://... (để trống dùng ảnh mặc định)">
+            </div>
+            <div class="form-group">
+                <label>Mô tả</label>
+                <textarea name="description" rows="2" placeholder="Mô tả ngắn về sách..."></textarea>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">Lưu</button>
+                <button type="button" class="btn-secondary" onclick="toggleForm('add-book-form')">Hủy</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Bộ lọc danh mục -->
+    <div class="book-list-filters">
+        <a href="{{ url_for('book.admin_book_list') }}"
+           class="filter-tag {% if not selected_category %}active{% endif %}">Tất cả</a>
+        {% for cat in categories %}
+            <a href="{{ url_for('book.admin_book_list', category=cat.name) }}"
+               class="filter-tag {% if selected_category == cat.name %}active{% endif %}">
+                {{ cat.name }}
+            </a>
+        {% endfor %}
+    </div>
+
+    <!-- Bảng sách -->
+    <div class="book-table-wrap">
+        <table class="book-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Bìa</th>
+                    <th>Tên sách</th>
+                    <th>Tác giả</th>
+                    <th>Danh mục</th>
+                    <th>Số lượng</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if books %}
+                    {% for book in books %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>
+                            <img src="{{ book.cover }}" alt="{{ book.title }}" class="book-thumb">
+                        </td>
+                        <td class="book-title-cell">
+                            <a href="{{ url_for('book.detail', book_id=book.id) }}"
+                               class="book-title-link" target="_blank">{{ book.title }}</a>
+                        </td>
+                        <td>{{ book.author }}</td>
+                        <td><span class="book-count-badge">{{ book.category }}</span></td>
+                        <td class="qty-cell">{{ book.quantity }}</td>
+                        <td>
+                            <span class="status-chip {% if book.quantity > 0 %}available{% else %}unavailable{% endif %}">
+                                {% if book.quantity > 0 %}Còn sách{% else %}Hết sách{% endif %}
+                            </span>
+                        </td>
+                        <td class="cat-actions">
+                            <button class="btn-edit" onclick="toggleEditBook({{ book.id }})">Sửa</button>
+                            <form action="{{ url_for('book.book_delete', book_id=book.id) }}" method="post"
+                                  onsubmit="return confirm('Xóa sách \'{{ book.title }}\'?')">
+                                <button type="submit" class="btn-delete">Xóa</button>
+                            </form>
+                        </td>
+                    </tr>
+                    <!-- Form sửa inline -->
+                    <tr class="edit-row" id="edit-book-{{ book.id }}" style="display:none;">
+                        <td colspan="8">
+                            <form action="{{ url_for('book.book_edit', book_id=book.id) }}"
+                                  method="post" class="edit-inline-form">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Tên sách <span class="required">*</span></label>
+                                        <input type="text" name="title" value="{{ book.title }}" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Tác giả <span class="required">*</span></label>
+                                        <input type="text" name="author" value="{{ book.author }}" required>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Danh mục <span class="required">*</span></label>
+                                        <select name="category" required>
+                                            {% for cat in categories %}
+                                                <option value="{{ cat.name }}"
+                                                    {% if cat.name == book.category %}selected{% endif %}>
+                                                    {{ cat.name }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Số lượng</label>
+                                        <input type="number" name="quantity" value="{{ book.quantity }}" min="0">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>URL ảnh bìa</label>
+                                    <input type="text" name="cover" value="{{ book.cover }}">
+                                </div>
+                                <div class="form-group">
+                                    <label>Mô tả</label>
+                                    <textarea name="description" rows="2">{{ book.description }}</textarea>
+                                </div>
+                                <div class="form-actions">
+                                    <button type="submit" class="btn-primary">Cập nhật</button>
+                                    <button type="button" class="btn-secondary"
+                                            onclick="toggleEditBook({{ book.id }})">Hủy</button>
+                                </div>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="8" class="empty-table">
+                            {% if selected_category %}
+                                Không có sách nào trong danh mục "{{ selected_category }}".
+                            {% else %}
+                                Chưa có sách nào trong hệ thống.
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="book-list-summary">
+        Hiển thị <strong>{{ books|length }}</strong> sách
+        {% if selected_category %}trong danh mục <strong>{{ selected_category }}</strong>{% endif %}
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleForm(id) {
+    const el = document.getElementById(id);
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function toggleEditBook(bookId) {
+    const row = document.getElementById('edit-book-' + bookId);
+    row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+}
+</script>
+{% endblock %}

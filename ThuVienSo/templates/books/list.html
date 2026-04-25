@@ -1,0 +1,49 @@
+{% extends "layout/base.html" %}
+{% block title %}Danh sách Sách - Thư Viện Số{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/books.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="book-list-page">
+
+    <div class="book-list-header">
+        <h1>Danh sách Sách</h1>
+        <p class="book-list-subtitle">Khám phá kho sách của thư viện</p>
+    </div>
+
+    <!-- Bộ lọc danh mục -->
+    <div class="book-list-filters">
+        <a href="{{ url_for('book.book_list') }}"
+           class="filter-tag {% if not selected_category %}active{% endif %}">
+            Tất cả
+        </a>
+        {% for cat in categories %}
+            <a href="{{ url_for('book.book_list', category=cat.name) }}"
+               class="filter-tag {% if selected_category == cat.name %}active{% endif %}">
+                {{ cat.name }}
+            </a>
+        {% endfor %}
+    </div>
+
+    <!-- Kết quả -->
+    {% if books %}
+        <p class="results-count">
+            Hiển thị <strong>{{ books|length }}</strong> sách
+            {% if selected_category %}trong danh mục <strong>{{ selected_category }}</strong>{% endif %}
+        </p>
+        <div class="books-grid">
+            {% for book in books %}
+                {% include "partials/book_card.html" %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="no-results">
+            <p>Không có sách nào trong danh mục <em>{{ selected_category }}</em>.</p>
+            <a href="{{ url_for('book.book_list') }}" class="btn-back">Xem tất cả sách</a>
+        </div>
+    {% endif %}
+
+</div>
+{% endblock %}

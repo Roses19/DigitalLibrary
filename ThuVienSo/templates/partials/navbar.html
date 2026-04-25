@@ -19,33 +19,46 @@
 
         <!-- RIGHT -->
         <div class="navbar-user">
-            <a href="#" class="navbar-notification">🔔</a>
+            <a href="#">🔔</a>
 
-            {% if session.get('username') %}
+            {% if current_user.is_authenticated %}
+                <!-- USER DROPDOWN -->
                 <div class="user-dropdown">
                     <button class="user-dropdown-btn">
-                        <span>Hi, {{ session.get('username') }}</span>
+                        <span>Hi, {{ current_user.username }}</span>
                         <span class="dropdown-arrow">▾</span>
                     </button>
 
                     <div class="user-dropdown-menu">
                         <a href="{{ url_for('user.user_profile') }}" class="dropdown-item">
-                            <span class="dropdown-icon">👤</span>
-                            <span>Thông tin cá nhân</span>
+                            👤 Thông tin cá nhân
                         </a>
+
                         <a href="{{ url_for('borrow.history') }}" class="dropdown-item">
-                            <span class="dropdown-icon">📚</span>
-                            <span>Lịch sử mượn sách</span>
+                            📚 Lịch sử mượn sách
                         </a>
+
                         <div class="dropdown-divider"></div>
 
                         <a href="{{ url_for('auth.logout') }}" class="dropdown-item logout">
-                            <span class="dropdown-icon">🚪</span>
-                            <span>Đăng xuất</span>
+                            🚪 Đăng xuất
                         </a>
                     </div>
                 </div>
+
+                <!-- ROLE -->
+                {% set role_name = (current_user.role.name if current_user.role else '')|lower %}
+
+                {% if role_name in ['admin', 'quản trị', 'quản trị viên', 'thủ thư', 'librarian'] %}
+                    <a href="{{ url_for('admin_bp.dashboard') }}">Quản lý</a>
+                {% endif %}
+
+                {% if role_name in ['admin', 'quản trị', 'quản trị viên'] %}
+                    <a href="{{ url_for('admin_bp.users') }}">Người dùng</a>
+                {% endif %}
+
             {% else %}
+                <!-- CHƯA LOGIN -->
                 <a href="{{ url_for('auth.login') }}">Đăng nhập</a>
                 <a href="{{ url_for('auth.register') }}">Đăng ký</a>
             {% endif %}
