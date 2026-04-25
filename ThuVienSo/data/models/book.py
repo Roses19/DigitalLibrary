@@ -1,6 +1,6 @@
 from ThuVienSo import db
 from ThuVienSo.data.models.book_author import book_authors
-
+from ThuVienSo.data.models.book_copy import BookCopy
 
 class Book(db.Model):
     __tablename__ = "books"
@@ -17,9 +17,6 @@ class Book(db.Model):
     publish_year = db.Column(db.Integer)
     language = db.Column(db.String(50))
     pages = db.Column(db.Integer)
-    shelf_location = db.Column(db.String(50))
-    total_quantity = db.Column(db.Integer, default=0)
-    available_quantity = db.Column(db.Integer, default=0)
     status = db.Column(db.String(20), default="available")
     created_by = db.Column(db.Integer, db.ForeignKey("users.id"))
     created_at = db.Column(db.DateTime)
@@ -32,6 +29,15 @@ class Book(db.Model):
         secondary=book_authors,
         backref=db.backref("books", lazy="dynamic"),
     )
-
+    copies = db.relationship("BookCopy", back_populates="book", lazy="select")
     def __repr__(self):
         return f"<Book {self.title}>"
+
+    @property
+    def total(self):
+        return sum(c.total_quantity or 0 for c in self.copies)
+
+    # ================== AVAILABLE ==================
+    @property
+    def available(self):
+        return sum(c.available_quantity or 0 for c in self.copies)

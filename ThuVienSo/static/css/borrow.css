@@ -1,32 +1,93 @@
 /* =====================
-   BORROW PAGE
+   BORROW.CSS FINAL
    ===================== */
 
-.borrow-page {
-    max-width: 1200px;
-    margin: 40px auto;
-    padding: 0 32px;
-    min-height: calc(100vh - 180px);
+/* =====================
+   TAB HEADER
+   ===================== */
+
+.tab-header {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid #1a3c5e;
 }
 
-.borrow-header {
+.tab-btn {
+    padding: 10px 18px;
+    cursor: pointer;
+    border: 2px solid #1a3c5e;
+    border-bottom: none;
+    background: white;
+    color: #1a3c5e;
+    font-weight: 600;
+    transition: 0.2s;
+    margin-right: -2px;
+}
+
+.tab-btn:hover {
+    background: #eef5fb;
+}
+
+.tab-btn.active {
+    background: #1a3c5e;
+    color: white;
+}
+
+.tab-panel {
+    display: none;
+    border-top: none;
+    padding: 16px;
+    background: white;
+}
+
+.tab-panel.active {
+    display: block;
+}
+
+
+/* =====================
+   COMMON BORROW PAGE
+   ===================== */
+
+.borrow-page,
+.borrow-history-page,
+.borrow-request-page {
+    max-width: 1180px;
+    margin: 42px auto 70px;
+    padding: 0 28px;
+    color: #123b5d;
+    min-height: calc(100vh - 220px);
+}
+
+.borrow-header,
+.borrow-history-header,
+.borrow-request-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
     margin-bottom: 32px;
 }
 
-.borrow-header h1 {
-    font-size: 42px;
+.borrow-header h1,
+.borrow-history-header h1,
+.borrow-request-header h1 {
+    margin: 0 0 8px;
+    font-size: 38px;
     font-weight: 800;
     color: #123b5d;
-    margin: 0 0 10px;
 }
 
-.borrow-header p {
-    font-size: 18px;
-    color: #555;
+.borrow-header p,
+.borrow-history-header p,
+.borrow-request-header p {
     margin: 0;
+    font-size: 16px;
+    color: #555;
 }
 
-.borrow-section-title {
+.borrow-section-title,
+.section-title-row h2 {
     font-size: 28px;
     font-weight: 800;
     color: #123b5d;
@@ -35,22 +96,54 @@
     border-left: 5px solid #e97732;
 }
 
+.section-title-row {
+    margin-bottom: 16px;
+}
+
+.section-title-row h2 {
+    margin-top: 0;
+}
+
+
 /* =====================
-   TABLE
+   HISTORY PAGE
    ===================== */
 
-.borrow-table-wrapper {
+.btn-history-back,
+.btn-request-back {
+    background: #17466d;
+    color: #ffffff;
+    text-decoration: none;
+    padding: 11px 16px;
+    border-radius: 10px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.btn-history-back:hover,
+.btn-request-back:hover {
+    background: #0f3556;
+    color: #ffffff;
+}
+
+.borrow-section {
+    margin-bottom: 36px;
+}
+
+.borrow-history-card,
+.borrow-table-wrap {
+    width: 100%;
+    overflow-x: auto;
     background: #ffffff;
     border-radius: 16px;
-    overflow-x: auto;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 8px 26px rgba(0, 0, 0, 0.08);
     margin-bottom: 30px;
 }
 
 .borrow-table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 850px;
+    min-width: 900px;
 }
 
 .borrow-table thead {
@@ -58,18 +151,18 @@
 }
 
 .borrow-table th {
-    padding: 16px;
+    padding: 15px 16px;
     color: #ffffff;
     font-size: 15px;
-    font-weight: 700;
+    font-weight: 800;
     text-align: left;
     white-space: nowrap;
 }
 
 .borrow-table td {
-    padding: 16px;
+    padding: 15px 16px;
     border-bottom: 1px solid #e5e7eb;
-    color: #333;
+    color: #333333;
     font-size: 15px;
     vertical-align: middle;
 }
@@ -82,85 +175,102 @@
     border-bottom: none;
 }
 
-/* =====================
-   BOOK INFO
-   ===================== */
-
-.borrow-book-info {
+.borrow-book-info,
+.borrow-book-line {
     display: flex;
     flex-direction: column;
     gap: 4px;
 }
 
-.borrow-book-info strong {
+.borrow-book-info strong,
+.borrow-book-line strong {
     color: #123b5d;
     font-size: 16px;
+    font-weight: 800;
 }
 
-.borrow-book-info span {
-    color: #666;
+.borrow-book-info span,
+.borrow-book-line span {
+    color: #666666;
     font-size: 14px;
 }
 
+.borrow-empty,
+.empty-history-box {
+    background: #ffffff;
+    padding: 30px;
+    border-radius: 16px;
+    color: #555555;
+    font-size: 16px;
+    box-shadow: 0 8px 26px rgba(0, 0, 0, 0.08);
+    margin-bottom: 30px;
+}
+
+.borrow-empty p {
+    margin: 0;
+}
+
+
 /* =====================
-   STATUS BADGE
+   STATUS
    ===================== */
 
-.borrow-status {
-    display: inline-block;
-    padding: 7px 13px;
+.borrow-status,
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 95px;
+    padding: 7px 12px;
     border-radius: 999px;
     font-size: 13px;
     font-weight: 800;
     white-space: nowrap;
 }
 
-.borrow-status.pending {
-    background: #fff3cd;
-    color: #9a6500;
+.borrow-status.pending,
+.status-pending {
+    background: #fef3c7;
+    color: #92400e;
 }
 
-.borrow-status.approved {
+.borrow-status.approved,
+.status-approved {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.borrow-status.rejected,
+.status-rejected {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.borrow-status.returned,
+.record-returned {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.borrow-status.borrowing,
+.record-borrowing {
     background: #dbeafe;
     color: #1d4ed8;
 }
 
-.borrow-status.rejected {
-    background: #fee2e2;
-    color: #b91c1c;
-}
-
-.borrow-status.returned {
+.borrow-status.available {
     background: #dcfce7;
     color: #15803d;
 }
 
-.borrow-status.borrowing {
-    background: #e0f2fe;
-    color: #0369a1;
+.borrow-status.unavailable {
+    background: #fee2e2;
+    color: #b91c1c;
 }
+
 
 /* =====================
-   EMPTY BOX
-   ===================== */
-
-.borrow-empty {
-    background: #ffffff;
-    padding: 34px;
-    border-radius: 16px;
-    text-align: center;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-    margin-bottom: 30px;
-}
-
-.borrow-empty p {
-    margin: 0;
-    font-size: 17px;
-    color: #555;
-}
-
-/* =====================
-   ADMIN FILTER
+   FILTER
    ===================== */
 
 .borrow-filter {
@@ -170,7 +280,9 @@
     margin-bottom: 24px;
 }
 
-.borrow-filter a {
+.borrow-filter a,
+.borrow-filter button {
+    border: none;
     padding: 9px 16px;
     border-radius: 999px;
     background: #eef3f8;
@@ -178,13 +290,18 @@
     text-decoration: none;
     font-weight: 700;
     transition: 0.2s ease;
+    cursor: pointer;
+    font: inherit;
 }
 
 .borrow-filter a.active,
-.borrow-filter a:hover {
+.borrow-filter a:hover,
+.borrow-filter button.active,
+.borrow-filter button:hover {
     background: #17466d;
     color: #ffffff;
 }
+
 
 /* =====================
    ACTION BUTTONS
@@ -192,11 +309,13 @@
 
 .borrow-actions {
     display: flex;
+    align-items: center;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 10px;
 }
 
-.borrow-actions form {
+.borrow-actions form,
+.delete-request-form {
     margin: 0;
 }
 
@@ -205,16 +324,21 @@
 .btn-return,
 .btn-borrow-main,
 .btn-edit,
-.btn-delete {
+.btn-delete,
+.btn-borrow-action {
     border: none;
-    padding: 8px 13px;
-    border-radius: 8px;
+    min-width: 64px;
+    height: 38px;
+    padding: 0 13px;
+    border-radius: 9px;
     color: #ffffff;
-    font-weight: 700;
+    font-size: 14px;
+    font-weight: 800;
     cursor: pointer;
     text-decoration: none;
-    display: inline-block;
-    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .btn-approve {
@@ -222,7 +346,8 @@
 }
 
 .btn-reject,
-.btn-delete {
+.btn-delete,
+.btn-delete-request {
     background: #dc2626;
 }
 
@@ -231,7 +356,8 @@
     background: #17466d;
 }
 
-.btn-edit {
+.btn-edit,
+.btn-edit-request {
     background: #2563eb;
 }
 
@@ -240,61 +366,143 @@
 .btn-return:hover,
 .btn-borrow-main:hover,
 .btn-edit:hover,
-.btn-delete:hover {
+.btn-delete:hover,
+.btn-borrow-action:hover {
     opacity: 0.9;
     color: #ffffff;
 }
 
-.no-action {
-    color: #777;
+.no-action,
+.muted-text {
+    color: #777777;
     font-style: italic;
+    font-size: 14px;
 }
 
+
 /* =====================
-   BORROW REQUEST FORM
+   BORROW REQUEST / EDIT FORM
    ===================== */
 
 .borrow-request-card {
     display: grid;
-    grid-template-columns: 280px 1fr;
-    gap: 32px;
+    grid-template-columns: 340px 1fr;
+    gap: 34px;
     background: #ffffff;
     border-radius: 18px;
     padding: 28px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08);
 }
 
+.borrow-book-preview,
+.borrow-request-cover {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.borrow-book-cover-wrap,
+.borrow-request-cover {
+    width: 100%;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #f3f6fa;
+    box-shadow: 0 5px 18px rgba(15, 45, 80, 0.12);
+}
+
+.borrow-book-cover,
 .borrow-request-cover img {
     width: 100%;
-    height: 390px;
+    height: 460px;
     object-fit: cover;
-    border-radius: 14px;
+    display: block;
+    border-radius: 16px;
     background: #f3f4f6;
 }
 
+.borrow-book-basic h2,
 .borrow-request-info h2 {
-    font-size: 32px;
-    color: #123b5d;
     margin: 0 0 8px;
+    font-size: 28px;
+    line-height: 1.25;
+    color: #123b5d;
+    font-weight: 800;
 }
 
+.borrow-book-author,
 .borrow-request-author {
-    color: #555;
-    font-size: 17px;
-    margin-bottom: 22px;
+    margin: 0 0 12px;
+    color: #555555;
+    font-size: 15px;
+}
+
+.borrow-request-content,
+.borrow-request-info {
+    min-width: 0;
+}
+
+.borrow-info-box,
+.borrow-request-meta {
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 24px;
+    background: #ffffff;
+}
+
+.borrow-info-box h3 {
+    margin: 0;
+    padding: 15px 18px;
+    background: #17466d;
+    color: #ffffff;
+    font-size: 18px;
+    font-weight: 800;
+}
+
+.borrow-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.borrow-info-item {
+    padding: 15px 18px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.borrow-info-item:nth-child(odd) {
+    border-right: 1px solid #e5e7eb;
+}
+
+.borrow-info-item span {
+    display: block;
+    margin-bottom: 6px;
+    color: #667085;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.borrow-info-item strong {
+    color: #123b5d;
+    font-size: 15px;
+    font-weight: 800;
 }
 
 .borrow-request-meta {
-    background: #f8fafc;
-    border-radius: 14px;
     padding: 18px;
-    margin-bottom: 22px;
+    background: #f8fafc;
 }
 
 .borrow-request-meta p {
     margin: 8px 0;
-    color: #333;
+    color: #333333;
     font-size: 16px;
+}
+
+.borrow-request-form {
+    background: #f8fafc;
+    border-radius: 16px;
+    padding: 22px;
+    border: 1px solid #e5e7eb;
 }
 
 .borrow-request-form .form-group {
@@ -303,9 +511,9 @@
 
 .borrow-request-form label {
     display: block;
+    margin-bottom: 8px;
     font-weight: 800;
     color: #123b5d;
-    margin-bottom: 8px;
 }
 
 .borrow-request-form input,
@@ -314,8 +522,11 @@
     border: 1px solid #cfd8e3;
     border-radius: 10px;
     padding: 12px 14px;
-    font-size: 16px;
+    font-size: 15px;
+    font-family: inherit;
     outline: none;
+    background: #ffffff;
+    box-sizing: border-box;
 }
 
 .borrow-request-form input:focus,
@@ -324,42 +535,62 @@
     box-shadow: 0 0 0 3px rgba(23, 70, 109, 0.12);
 }
 
+.borrow-request-form small {
+    display: block;
+    margin-top: 7px;
+    color: #667085;
+    font-size: 13px;
+}
+
 .borrow-request-actions {
     display: flex;
     justify-content: flex-end;
+    align-items: center;
     gap: 12px;
     margin-top: 22px;
 }
 
 .btn-cancel,
-.btn-submit-borrow {
+.btn-submit-borrow,
+.btn-cancel-request,
+.btn-submit-request {
     border: none;
+    height: 42px;
+    padding: 0 18px;
     border-radius: 10px;
-    padding: 12px 18px;
+    font-size: 15px;
     font-weight: 800;
-    text-decoration: none;
     cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.btn-cancel {
+.btn-cancel,
+.btn-cancel-request {
     background: #e5e7eb;
-    color: #333;
+    color: #333333;
 }
 
-.btn-submit-borrow {
-    background: #e97732;
-    color: #ffffff;
-}
-
-.btn-cancel:hover {
+.btn-cancel:hover,
+.btn-cancel-request:hover {
     background: #d1d5db;
-    color: #333;
+    color: #333333;
 }
 
-.btn-submit-borrow:hover {
-    opacity: 0.9;
+.btn-submit-borrow,
+.btn-submit-request {
+    background: #f26b2f;
     color: #ffffff;
 }
+
+.btn-submit-borrow:hover,
+.btn-submit-request:hover {
+    background: #d95a23;
+    color: #ffffff;
+}
+
 
 /* =====================
    CUSTOM CONFIRM MODAL
@@ -412,7 +643,7 @@
 }
 
 .custom-modal p {
-    color: #555;
+    color: #555555;
     font-size: 16px;
     line-height: 1.5;
     margin: 0 0 24px;
@@ -452,69 +683,6 @@
     opacity: 0.9;
 }
 
-@keyframes modalFadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-8px) scale(0.97);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
-}
-
-/* =====================
-   RESPONSIVE
-   ===================== */
-
-@media (max-width: 768px) {
-    .borrow-page {
-        padding: 0 18px;
-        margin: 28px auto;
-    }
-
-    .borrow-header h1 {
-        font-size: 32px;
-    }
-
-    .borrow-section-title {
-        font-size: 24px;
-    }
-
-    .borrow-request-card {
-        grid-template-columns: 1fr;
-    }
-
-    .borrow-request-cover img {
-        max-width: 280px;
-        height: auto;
-    }
-
-    .borrow-request-actions {
-        justify-content: stretch;
-        flex-direction: column;
-    }
-
-    .btn-cancel,
-    .btn-submit-borrow {
-        text-align: center;
-        width: 100%;
-    }
-
-    .custom-modal-actions {
-        flex-direction: column-reverse;
-    }
-
-    .btn-modal-cancel,
-    .btn-modal-confirm {
-        width: 100%;
-    }
-}
-/* =====================
-   ADMIN REJECT MODAL FORM
-   ===================== */
-
 .modal-form-group {
     margin-bottom: 18px;
 }
@@ -534,21 +702,94 @@
     border-color: #17466d;
     box-shadow: 0 0 0 3px rgba(23, 70, 109, 0.12);
 }
-.borrow-filter button {
-    border: none;
-    padding: 9px 16px;
-    border-radius: 999px;
-    background: #eef3f8;
-    color: #17466d;
-    text-decoration: none;
-    font-weight: 700;
-    transition: 0.2s ease;
-    cursor: pointer;
-    font: inherit;
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
-.borrow-filter button.active,
-.borrow-filter button:hover {
-    background: #17466d;
-    color: #ffffff;
+
+/* =====================
+   RESPONSIVE
+   ===================== */
+
+@media (max-width: 900px) {
+    .borrow-request-card {
+        grid-template-columns: 1fr;
+    }
+
+    .borrow-book-cover,
+    .borrow-request-cover img {
+        max-width: 340px;
+        height: auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .borrow-page,
+    .borrow-history-page,
+    .borrow-request-page {
+        padding: 0 16px;
+        margin: 28px auto 50px;
+    }
+
+    .borrow-header,
+    .borrow-history-header,
+    .borrow-request-header {
+        flex-direction: column;
+    }
+
+    .borrow-header h1,
+    .borrow-history-header h1,
+    .borrow-request-header h1 {
+        font-size: 30px;
+    }
+
+    .borrow-section-title,
+    .section-title-row h2 {
+        font-size: 24px;
+    }
+
+    .btn-history-back,
+    .btn-request-back {
+        width: 100%;
+        text-align: center;
+    }
+
+    .borrow-request-actions {
+        flex-direction: column;
+    }
+
+    .btn-cancel,
+    .btn-submit-borrow,
+    .btn-cancel-request,
+    .btn-submit-request {
+        width: 100%;
+    }
+
+    .custom-modal-actions {
+        flex-direction: column-reverse;
+    }
+
+    .btn-modal-cancel,
+    .btn-modal-confirm {
+        width: 100%;
+    }
+}
+
+@media (max-width: 600px) {
+    .borrow-info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .borrow-info-item:nth-child(odd) {
+        border-right: none;
+    }
 }

@@ -1,4 +1,3 @@
-
 from ThuVienSo import db
 
 
@@ -19,14 +18,19 @@ class BorrowRequestItem(db.Model):
         nullable=False
     )
 
-    quantity = db.Column(db.Integer, default=1)
+    book_copy_id = db.Column(
+        db.Integer,
+        db.ForeignKey("book_copies.id"),
+        nullable=True
+    )
+
+    quantity = db.Column(db.Integer, nullable=False, default=1)
 
     borrow_request = db.relationship(
         "BorrowRequest",
         back_populates="items"
     )
 
-    book = db.relationship(
-        "Book",
-        backref="borrow_request_items"
-    )
+    book = db.relationship("Book")
+
+    book_copy = db.relationship("BookCopy")

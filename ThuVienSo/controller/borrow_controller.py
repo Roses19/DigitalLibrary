@@ -1,9 +1,11 @@
 from datetime import datetime, timedelta
 
 from flask import render_template, redirect, url_for, flash, session, request
+from sqlalchemy.orm import joinedload
 
 from ThuVienSo import db
 from ThuVienSo.data.models.book import Book
+from ThuVienSo.data.models.book_copy import BookCopy
 from ThuVienSo.data.models.user import User
 from ThuVienSo.data.models.borrow_request import BorrowRequest
 from ThuVienSo.data.models.borrow_request_item import BorrowRequestItem
@@ -32,6 +34,8 @@ def get_current_user():
 
 def safe_int(value, default=1):
     try:
+        if value is None or value == "":
+            return default
         return int(value)
     except (TypeError, ValueError):
         return default
@@ -107,6 +111,368 @@ def get_record_status_label(status):
     return labels.get(status, status)
 
 
+# ================== BOOK QUANTITY HELPER ==================
+def get_book_with_copies(book_id):
+    """
+    Lấy sách kèm các bản lưu trữ ở chi nhánh.
+    joinedload thêm branch để template lấy copy.branch.name.
+    """
+    return (
+        Book.query
+        .options(
+            joinedload(Book.copies).joinedload(BookCopy.branch)
+        )
+        .get(book_id)
+    )
+
+
+def get_book_total_quantity(book):
+    if not book or not getattr(book, "copies", None):
+        return 0
+
+    return sum(
+        (copy.total_quantity or 0)
+        for copy in book.copies
+    )
+
+
+def get_book_available_quantity(book):
+    """
+    Tổng số lượng còn của sách ở tất cả chi nhánh.
+    """
+    if not book or not getattr(book, "copies", None):
+        return 0
+
+    return sum(
+        (copy.available_quantity or 0)
+        for copy in book.copies
+    )
+
+
+def get_available_copies(book):
+    """
+    Lấy danh sách chi nhánh còn sách.
+    Query trực tiếp từ BookCopy để tránh lỗi book.copies chưa load đủ dữ liệu.
+    """
+    if not book:
+        return []
+
+    return (
+        BookCopy.query
+        .options(joinedload(BookCopy.branch))
+        .filter(
+            BookCopy.book_id == book.id,
+            BookCopy.available_quantity > 0
+        )
+        .order_by(BookCopy.branch_id.asc())
+        .all()
+    )
+
+
+def get_copy_by_branch(book, branch_id):
+    """
+    Lấy BookCopy theo sách + chi nhánh.
+    """
+    branch_id = safe_int(branch_id, 0)
+
+    if branch_id <= 0:
+        return None
+
+    if not book:
+        return None
+
+    return (
+        BookCopy.query
+        .options(joinedload(BookCopy.branch))
+        .filter(
+            BookCopy.book_id == book.id,
+            BookCopy.branch_id == branch_id
+        )
+        .first()
+    )
+
+
+def attach_book_quantity(book):
+    """
+    Gắn số lượng tạm để template có thể dùng book.available_quantity nếu cần.
+    Đây chỉ là attribute trong request hiện tại, không phụ thuộc cột DB.
+    """
+    if not book:
+        return None
+
+    total_quantity = get_book_total_quantity(book)
+    available_quantity = get_book_available_quantity(book)
+
+    book.display_total_quantity = total_quantity
+    book.display_available_quantity = available_quantity
+
+    try:
+        book.available_quantity = available_quantity
+    except Exception:
+        pass
+
+    try:
+        book.total_quantity = total_quantity
+    except Exception:
+        pass
+
+    return book
+
+
+def get_branch_id_from_request():
+    """
+    branch_id có thể đến từ:
+    - query string: ?branch_id=...
+    - hidden input trong form
+    - select trong form
+    """
+    branch_id = request.form.get("branch_id") or request.args.get("branch_id")
+    return safe_int(branch_id, 0)
+
+
+def get_selected_book_copy_from_item(item):
+    """
+    Lấy BookCopy đã lưu trong BorrowRequestItem nếu có.
+    Ưu tiên book_copy_id vì đây là khóa chính xác nhất.
+    """
+    if not item:
+        return None
+
+    if hasattr(item, "book_copy") and item.book_copy:
+        return item.book_copy
+
+    if hasattr(item, "book_copy_id") and item.book_copy_id:
+        return (
+            BookCopy.query
+            .options(joinedload(BookCopy.branch))
+            .get(item.book_copy_id)
+        )
+
+    if hasattr(item, "branch_id") and item.branch_id:
+        return (
+            BookCopy.query
+            .options(joinedload(BookCopy.branch))
+            .filter(
+                BookCopy.book_id == item.book_id,
+                BookCopy.branch_id == item.branch_id
+            )
+            .first()
+        )
+
+    return None
+
+
+def get_selected_branch_id_from_item(item):
+    """
+    Lấy branch_id từ BorrowRequestItem.
+    Ưu tiên book_copy_id vì đây là dữ liệu chính xác nhất.
+    """
+    selected_copy = get_selected_book_copy_from_item(item)
+
+    if selected_copy:
+        return selected_copy.branch_id
+
+    if hasattr(item, "branch_id") and item.branch_id:
+        return item.branch_id
+
+    return None
+
+
+def assign_branch_to_item(item, branch_id, selected_copy=None):
+    """
+    Lưu chi nhánh mượn vào BorrowRequestItem.
+    Ưu tiên lưu book_copy_id vì BookCopy chứa đúng sách + chi nhánh + kệ + số lượng.
+    """
+    if not item:
+        return
+
+    if selected_copy and hasattr(item, "book_copy_id"):
+        item.book_copy_id = selected_copy.id
+
+    if hasattr(item, "branch_id"):
+        item.branch_id = branch_id
+
+
+def assign_branch_to_record_item(record_item, branch_id, selected_copy=None):
+    """
+    Lưu chi nhánh vào BorrowRecordItem sau khi duyệt phiếu.
+    """
+    if not record_item:
+        return
+
+    if selected_copy and hasattr(record_item, "book_copy_id"):
+        record_item.book_copy_id = selected_copy.id
+
+    if hasattr(record_item, "branch_id"):
+        record_item.branch_id = branch_id
+
+
+def get_borrow_item_branch_name(item):
+    """
+    Lấy tên chi nhánh của một dòng yêu cầu mượn.
+    Hỗ trợ:
+    - item.book_copy_id
+    - item.branch_id
+    """
+    if not item:
+        return "Chưa chọn chi nhánh"
+
+    selected_copy = get_selected_book_copy_from_item(item)
+
+    if selected_copy and selected_copy.branch:
+        return selected_copy.branch.name
+
+    return "Chưa chọn chi nhánh"
+
+
+def validate_borrow_selection(book, branch_id, quantity):
+    """
+    Kiểm tra chi nhánh + số lượng mượn.
+    """
+    if not book:
+        return None, "Không tìm thấy sách."
+
+    branch_id = safe_int(branch_id, 0)
+    quantity = safe_int(quantity, 1)
+
+    if branch_id <= 0:
+        return None, "Vui lòng chọn chi nhánh mượn sách."
+
+    selected_copy = get_copy_by_branch(book, branch_id)
+
+    if not selected_copy:
+        return None, "Chi nhánh này không có sách."
+
+    available_quantity = selected_copy.available_quantity or 0
+
+    if available_quantity <= 0:
+        return None, "Chi nhánh này hiện đã hết sách."
+
+    if quantity <= 0:
+        return None, "Số lượng mượn phải lớn hơn 0."
+
+    if quantity > available_quantity:
+        return None, f"Số lượng mượn không được vượt quá số sách còn tại chi nhánh này ({available_quantity})."
+
+    return selected_copy, None
+
+
+def decrease_book_copy_quantity(book, quantity, branch_id=None):
+    """
+    Khi duyệt phiếu mượn:
+    - Nếu có branch_id: trừ đúng chi nhánh đã chọn.
+    - Nếu không có branch_id: fallback trừ từ các chi nhánh còn sách.
+    """
+    if not book:
+        return False
+
+    quantity = safe_int(quantity, 0)
+
+    if quantity <= 0:
+        return False
+
+    branch_id = safe_int(branch_id, 0)
+
+    if branch_id > 0:
+        selected_copy = get_copy_by_branch(book, branch_id)
+
+        if not selected_copy:
+            return False
+
+        current_available = selected_copy.available_quantity or 0
+
+        if current_available < quantity:
+            return False
+
+        selected_copy.available_quantity = current_available - quantity
+        return True
+
+    available_quantity = get_book_available_quantity(book)
+
+    if available_quantity < quantity:
+        return False
+
+    remaining = quantity
+
+    copies = sorted(
+        list(book.copies or []),
+        key=lambda copy: copy.id
+    )
+
+    for copy in copies:
+        if remaining <= 0:
+            break
+
+        current_available = copy.available_quantity or 0
+
+        if current_available <= 0:
+            continue
+
+        deduct_quantity = min(current_available, remaining)
+        copy.available_quantity = current_available - deduct_quantity
+        remaining -= deduct_quantity
+
+    return remaining == 0
+
+
+def increase_book_copy_quantity(book, quantity, branch_id=None):
+    """
+    Khi trả sách:
+    - Nếu có branch_id: cộng lại đúng chi nhánh đã mượn.
+    - Nếu không có branch_id: fallback cộng vào các chi nhánh còn thiếu.
+    """
+    if not book:
+        return False
+
+    quantity = safe_int(quantity, 0)
+
+    if quantity <= 0:
+        return False
+
+    branch_id = safe_int(branch_id, 0)
+
+    if branch_id > 0:
+        selected_copy = get_copy_by_branch(book, branch_id)
+
+        if not selected_copy:
+            return False
+
+        selected_copy.available_quantity = (selected_copy.available_quantity or 0) + quantity
+        return True
+
+    copies = sorted(
+        list(book.copies or []),
+        key=lambda copy: copy.id
+    )
+
+    if not copies:
+        return False
+
+    remaining = quantity
+
+    for copy in copies:
+        if remaining <= 0:
+            break
+
+        total_quantity = copy.total_quantity or 0
+        available_quantity = copy.available_quantity or 0
+        space = total_quantity - available_quantity
+
+        if space <= 0:
+            continue
+
+        add_quantity = min(space, remaining)
+        copy.available_quantity = available_quantity + add_quantity
+        remaining -= add_quantity
+
+    if remaining > 0 and copies:
+        copies[0].available_quantity = (copies[0].available_quantity or 0) + remaining
+        remaining = 0
+
+    return remaining == 0
+
+
+# ================== USER BORROW STATE ==================
 def get_user_borrow_states():
     current_user = get_current_user()
 
@@ -118,7 +484,7 @@ def get_user_borrow_states():
         .join(BorrowRequest)
         .filter(
             BorrowRequest.user_id == current_user.id,
-            BorrowRequest.status.in_(["pending", "approved"])
+            BorrowRequest.status == "pending"
         )
         .order_by(BorrowRequest.created_at.desc())
         .all()
@@ -135,6 +501,7 @@ def get_user_borrow_states():
 
     return states
 
+
 def get_user_borrow_state_for_book(book_id):
     current_user = get_current_user()
 
@@ -147,7 +514,7 @@ def get_user_borrow_state_for_book(book_id):
         .filter(
             BorrowRequest.user_id == current_user.id,
             BorrowRequestItem.book_id == book_id,
-            BorrowRequest.status.in_(["pending", "approved"])
+            BorrowRequest.status == "pending"
         )
         .order_by(BorrowRequest.created_at.desc())
         .first()
@@ -172,20 +539,23 @@ def show_borrow_form(book_id):
         flash("Bạn cần đăng nhập để mượn sách.", "error")
         return redirect(url_for("auth.login"))
 
-    book = Book.query.get(book_id)
+    book = get_book_with_copies(book_id)
 
     if not book:
         flash("Không tìm thấy sách.", "error")
         return redirect("/books/list")
 
-    available_quantity = book.available_quantity or 0
+    attach_book_quantity(book)
 
-    if available_quantity <= 0:
+    total_available_quantity = get_book_available_quantity(book)
+    available_copies = get_available_copies(book)
+
+    if total_available_quantity <= 0:
         flash("Sách này hiện đã hết, không thể mượn.", "error")
         return redirect(url_for("book.detail", book_id=book.id))
 
-    # Chỉ phiếu đang chờ duyệt mới chuyển sang sửa phiếu.
-    # Phiếu đã duyệt thì vẫn được mượn lại.
+    selected_branch_id = get_branch_id_from_request()
+
     pending_item = (
         BorrowRequestItem.query
         .join(BorrowRequest)
@@ -199,12 +569,47 @@ def show_borrow_form(book_id):
     )
 
     if pending_item:
+        existing_branch_id = get_selected_branch_id_from_item(pending_item)
+
+        if selected_branch_id and existing_branch_id and selected_branch_id != existing_branch_id:
+            flash(
+                "Bạn không thể mượn cùng một sách ở 2 chi nhánh khác nhau. "
+                "Nếu muốn đổi chi nhánh, vui lòng sửa phiếu mượn hiện có.",
+                "warning"
+            )
+            return redirect(url_for("borrow.edit_form", borrow_id=pending_item.borrow_request_id))
+
+        if selected_branch_id and not existing_branch_id:
+            return redirect(
+                url_for(
+                    "borrow.edit_form",
+                    borrow_id=pending_item.borrow_request_id,
+                    branch_id=selected_branch_id
+                )
+            )
+
         return redirect(url_for("borrow.edit_form", borrow_id=pending_item.borrow_request_id))
+
+    selected_copy = get_copy_by_branch(book, selected_branch_id)
+
+    if selected_branch_id and not selected_copy:
+        flash("Chi nhánh bạn chọn không hợp lệ.", "error")
+        return redirect(url_for("book.detail", book_id=book.id))
+
+    selected_available_quantity = (
+        selected_copy.available_quantity
+        if selected_copy
+        else total_available_quantity
+    )
 
     return render_template(
         "borrow/request.html",
         book=book,
-        available_quantity=available_quantity,
+        available_quantity=selected_available_quantity,
+        total_available_quantity=total_available_quantity,
+        available_copies=available_copies,
+        selected_copy=selected_copy,
+        selected_branch_id=selected_branch_id,
         edit_mode=False,
         form_action=url_for("borrow.request_borrow", book_id=book.id),
         quantity=1,
@@ -222,35 +627,30 @@ def create_borrow_request(book_id):
         flash("Bạn cần đăng nhập để mượn sách.", "error")
         return redirect(url_for("auth.login"))
 
-    book = Book.query.get(book_id)
+    book = get_book_with_copies(book_id)
 
     if not book:
         flash("Không tìm thấy sách.", "error")
         return redirect("/books/list")
 
-    available_quantity = book.available_quantity or 0
+    attach_book_quantity(book)
 
-    if available_quantity <= 0:
+    total_available_quantity = get_book_available_quantity(book)
+
+    if total_available_quantity <= 0:
         flash("Sách này hiện đã hết, không thể mượn.", "error")
         return redirect(url_for("book.detail", book_id=book.id))
 
-    try:
-        quantity = int(request.form.get("quantity", 1))
-    except ValueError:
-        quantity = 1
-
+    branch_id = get_branch_id_from_request()
+    quantity = safe_int(request.form.get("quantity"), 1)
     note = request.form.get("note", "").strip()
 
-    if quantity <= 0:
-        flash("Số lượng mượn phải lớn hơn 0.", "error")
+    selected_copy, error_message = validate_borrow_selection(book, branch_id, quantity)
+
+    if error_message:
+        flash(error_message, "error")
         return redirect(url_for("borrow.borrow_form", book_id=book.id))
 
-    if quantity > available_quantity:
-        flash(f"Số lượng mượn không được vượt quá số sách còn lại ({available_quantity}).", "error")
-        return redirect(url_for("borrow.borrow_form", book_id=book.id))
-
-    # Chỉ chặn nếu đang có phiếu pending.
-    # Phiếu approved thì cho phép mượn lại.
     pending_item = (
         BorrowRequestItem.query
         .join(BorrowRequest)
@@ -264,6 +664,16 @@ def create_borrow_request(book_id):
     )
 
     if pending_item:
+        existing_branch_id = get_selected_branch_id_from_item(pending_item)
+
+        if existing_branch_id and branch_id != existing_branch_id:
+            flash(
+                "Bạn đã có phiếu mượn đang chờ duyệt cho sách này ở chi nhánh khác. "
+                "Nếu muốn đổi chi nhánh, vui lòng sửa phiếu mượn hiện có.",
+                "warning"
+            )
+            return redirect(url_for("borrow.edit_form", borrow_id=pending_item.borrow_request_id))
+
         flash("Bạn đã có phiếu mượn đang chờ duyệt cho sách này. Vui lòng sửa phiếu hiện có.", "warning")
         return redirect(url_for("borrow.edit_form", borrow_id=pending_item.borrow_request_id))
 
@@ -281,6 +691,8 @@ def create_borrow_request(book_id):
         book_id=book.id,
         quantity=quantity
     )
+
+    assign_branch_to_item(borrow_item, branch_id, selected_copy)
 
     db.session.add(borrow_item)
     db.session.commit()
@@ -317,6 +729,7 @@ def get_borrow_history():
         borrow_records=borrow_records,
         get_request_status_label=get_request_status_label,
         get_record_status_label=get_record_status_label,
+        get_borrow_item_branch_name=get_borrow_item_branch_name,
     )
 
 
@@ -347,20 +760,55 @@ def show_edit_borrow_request_form(borrow_id):
         return redirect(url_for("borrow.history"))
 
     item = borrow_request.items[0]
-    book = item.book
-    available_quantity = book.available_quantity or 0
+    book = get_book_with_copies(item.book_id)
+
+    if not book:
+        flash("Không tìm thấy sách.", "error")
+        return redirect(url_for("borrow.history"))
+
+    attach_book_quantity(book)
+
+    total_available_quantity = get_book_available_quantity(book)
+    available_copies = get_available_copies(book)
+
+    branch_id_from_url = get_branch_id_from_request()
+    existing_branch_id = get_selected_branch_id_from_item(item)
+
+    if branch_id_from_url and existing_branch_id and branch_id_from_url != existing_branch_id:
+        flash(
+            "Phiếu này đang mượn ở chi nhánh khác. "
+            "Nếu muốn đổi chi nhánh, hãy chọn lại trong form sửa phiếu và bấm Lưu thay đổi.",
+            "warning"
+        )
+        selected_branch_id = existing_branch_id
+    else:
+        selected_branch_id = branch_id_from_url or existing_branch_id
+
+    selected_copy = get_copy_by_branch(book, selected_branch_id)
+
+    selected_available_quantity = (
+        selected_copy.available_quantity
+        if selected_copy
+        else total_available_quantity
+    )
+
+    quantity_value = item.quantity if selected_copy else 1
 
     return render_template(
         "borrow/request.html",
         book=book,
-        available_quantity=available_quantity,
+        available_quantity=selected_available_quantity,
+        total_available_quantity=total_available_quantity,
+        available_copies=available_copies,
+        selected_copy=selected_copy,
+        selected_branch_id=selected_branch_id,
         edit_mode=True,
         borrow_request=borrow_request,
         item=item,
         form_action=url_for("borrow.update_request", borrow_id=borrow_request.id),
-        quantity=item.quantity,
+        quantity=quantity_value,
         note=borrow_request.note or "",
-        page_title="Sửa yêu cầu mượn sách",
+        page_title="Thông tin mượn sách",
         submit_text="Lưu thay đổi",
     )
 
@@ -392,21 +840,27 @@ def update_borrow_request(borrow_id):
         return redirect(url_for("borrow.history"))
 
     item = borrow_request.items[0]
-    book = item.book
-    available_quantity = book.available_quantity or 0
+    book = get_book_with_copies(item.book_id)
 
+    if not book:
+        flash("Không tìm thấy sách.", "error")
+        return redirect(url_for("borrow.history"))
+
+    attach_book_quantity(book)
+
+    branch_id = get_branch_id_from_request()
     quantity = safe_int(request.form.get("quantity"), 1)
     note = request.form.get("note", "").strip()
 
-    if quantity <= 0:
-        flash("Số lượng mượn phải lớn hơn 0.", "error")
-        return redirect(url_for("borrow.edit_form", borrow_id=borrow_request.id))
+    selected_copy, error_message = validate_borrow_selection(book, branch_id, quantity)
 
-    if quantity > available_quantity:
-        flash(f"Số lượng mượn không được vượt quá số sách còn lại ({available_quantity}).", "error")
+    if error_message:
+        flash(error_message, "error")
         return redirect(url_for("borrow.edit_form", borrow_id=borrow_request.id))
 
     item.quantity = quantity
+    assign_branch_to_item(item, branch_id, selected_copy)
+
     borrow_request.note = note
 
     db.session.commit()
@@ -498,18 +952,31 @@ def approve_borrow_request(borrow_id):
         flash("Yêu cầu mượn không có sách.", "error")
         return redirect(next_url)
 
+    books_cache = {}
+    copies_cache = {}
+
     for item in borrow_request.items:
-        book = item.book
+        book = get_book_with_copies(item.book_id)
 
         if not book:
             flash("Có sách trong yêu cầu không tồn tại.", "error")
             return redirect(next_url)
 
-        available_quantity = book.available_quantity or 0
+        branch_id = get_selected_branch_id_from_item(item)
+        selected_copy = get_copy_by_branch(book, branch_id)
+
+        if not selected_copy:
+            flash(f'Sách "{book.title}" chưa chọn chi nhánh mượn.', "error")
+            return redirect(next_url)
+
+        available_quantity = selected_copy.available_quantity or 0
 
         if available_quantity < item.quantity:
-            flash(f'Sách "{book.title}" không đủ số lượng để duyệt.', "error")
+            flash(f'Sách "{book.title}" không đủ số lượng tại chi nhánh đã chọn.', "error")
             return redirect(next_url)
+
+        books_cache[item.book_id] = book
+        copies_cache[item.id] = selected_copy
 
     borrow_request.status = "approved"
     borrow_request.approved_by = current_user.id if current_user else None
@@ -528,7 +995,9 @@ def approve_borrow_request(borrow_id):
     db.session.flush()
 
     for item in borrow_request.items:
-        book = item.book
+        book = books_cache.get(item.book_id)
+        selected_copy = copies_cache.get(item.id)
+        branch_id = selected_copy.branch_id if selected_copy else None
 
         record_item = BorrowRecordItem(
             borrow_record_id=borrow_record.id,
@@ -538,9 +1007,16 @@ def approve_borrow_request(borrow_id):
             item_status="borrowing",
         )
 
+        assign_branch_to_record_item(record_item, branch_id, selected_copy)
+
         db.session.add(record_item)
 
-        book.available_quantity = (book.available_quantity or 0) - item.quantity
+        success = decrease_book_copy_quantity(book, item.quantity, branch_id)
+
+        if not success:
+            db.session.rollback()
+            flash(f'Sách "{book.title}" không đủ số lượng để duyệt.', "error")
+            return redirect(next_url)
 
     db.session.commit()
 
@@ -623,20 +1099,28 @@ def return_borrow_record(record_id):
         return redirect(next_url)
 
     for item in borrow_record.items:
-        book = item.book
+        book = get_book_with_copies(item.book_id)
         not_returned_quantity = item.quantity - (item.returned_quantity or 0)
 
         if not book:
             continue
 
+        branch_id = None
+
+        if hasattr(item, "book_copy") and item.book_copy:
+            branch_id = item.book_copy.branch_id
+        elif hasattr(item, "book_copy_id") and item.book_copy_id:
+            selected_copy = BookCopy.query.get(item.book_copy_id)
+
+            if selected_copy:
+                branch_id = selected_copy.branch_id
+        elif hasattr(item, "branch_id") and item.branch_id:
+            branch_id = item.branch_id
+
         if not_returned_quantity > 0:
-            book.available_quantity = (book.available_quantity or 0) + not_returned_quantity
+            increase_book_copy_quantity(book, not_returned_quantity, branch_id)
             item.returned_quantity = item.quantity
             item.item_status = "returned"
-
-            if hasattr(book, "total_quantity") and book.total_quantity:
-                if book.available_quantity > book.total_quantity:
-                    book.available_quantity = book.total_quantity
 
     borrow_record.status = "returned"
 

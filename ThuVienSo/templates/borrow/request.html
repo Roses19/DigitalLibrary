@@ -1,96 +1,322 @@
 {% extends "layout/base.html" %}
 
 {% block title %}
-    {{ page_title }} - Thư Viện Số
+    {{ page_title or "Phiếu yêu cầu mượn sách" }} - Thư Viện Số
 {% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/borrow.css') }}">
+
+<style>
+    .borrow-form-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 150px;
+        gap: 16px;
+        align-items: start;
+        margin-bottom: 18px;
+    }
+
+    .borrow-branch-group,
+    .borrow-quantity-group {
+        margin-bottom: 0;
+    }
+
+    .borrow-branch-group select,
+    .borrow-branch-group input,
+    .borrow-quantity-group input {
+        width: 100%;
+        height: 46px;
+        border: 1px solid #ced4da;
+        border-radius: 8px;
+        padding: 0 12px;
+        font-size: 15px;
+        background-color: #fff;
+    }
+
+    .borrow-branch-group input[readonly] {
+        background-color: #f8f9fa;
+        color: #003b63;
+        font-weight: 700;
+    }
+
+    .borrow-quantity-group input {
+        text-align: center;
+    }
+
+    .borrow-request-form small {
+        display: block;
+        margin-top: 6px;
+        color: #6c757d;
+        font-size: 13px;
+        line-height: 1.4;
+    }
+
+    .borrow-book-branch {
+        margin-top: 8px;
+        font-size: 14px;
+        color: #003b63;
+    }
+
+    @media (max-width: 768px) {
+        .borrow-form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .borrow-quantity-group input {
+            text-align: left;
+        }
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="borrow-page">
-    <div class="borrow-header">
-        <h1>{{ page_title }}</h1>
+<div class="borrow-request-page">
 
-        {% if edit_mode %}
-            <p>Chỉnh sửa thông tin yêu cầu mượn sách khi yêu cầu còn đang chờ duyệt.</p>
-        {% else %}
-            <p>Kiểm tra thông tin sách và gửi yêu cầu mượn đến thủ thư.</p>
-        {% endif %}
+    <div class="borrow-request-header">
+        <div>
+            <h1>{{ page_title or "Phiếu yêu cầu mượn sách" }}</h1>
+            <p>
+                {% if edit_mode %}
+                    Chỉnh sửa thông tin yêu cầu mượn sách khi yêu cầu còn đang chờ duyệt.
+                {% else %}
+                    Kiểm tra thông tin sách và gửi yêu cầu mượn đến thủ thư.
+                {% endif %}
+            </p>
+        </div>
     </div>
 
     <div class="borrow-request-card">
-        <div class="borrow-request-cover">
-            {% if book.cover_image %}
-                <img src="{{ book.cover_image }}" alt="{{ book.title }}">
-            {% else %}
-                <img src="{{ url_for('static', filename='images/books/default-book.png') }}" alt="{{ book.title }}">
-            {% endif %}
-        </div>
 
-        <div class="borrow-request-info">
-            <h2>{{ book.title }}</h2>
-
-            <p class="borrow-request-author">
-                {% if book.authors %}
-                    {{ book.authors | map(attribute='name') | join(', ') }}
+        <!-- BOOK PREVIEW -->
+        <div class="borrow-book-preview">
+            <div class="borrow-book-cover-wrap">
+                {% if book.cover_image %}
+                    <img src="{{ book.cover_image }}"
+                         alt="{{ book.title }}"
+                         class="borrow-book-cover">
                 {% else %}
-                    Chưa rõ tác giả
-                {% endif %}
-            </p>
-
-            <div class="borrow-request-meta">
-                <p><strong>ISBN:</strong> {{ book.isbn or "Chưa có" }}</p>
-                <p><strong>Nhà xuất bản:</strong> {{ book.publisher.name if book.publisher else "Chưa có" }}</p>
-                <p><strong>Thể loại:</strong> {{ book.category.name if book.category else "Chưa có" }}</p>
-                <p><strong>Số lượng còn:</strong> {{ available_quantity }}</p>
-
-                {% if edit_mode %}
-                    <p><strong>Trạng thái:</strong> Chờ duyệt</p>
+                    <img src="{{ url_for('static', filename='images/books/default-book.png') }}"
+                         alt="{{ book.title }}"
+                         class="borrow-book-cover">
                 {% endif %}
             </div>
 
-            <form method="POST"
-                  action="{{ form_action }}"
-                  class="borrow-request-form">
+            <div class="borrow-book-basic">
+                <h2>{{ book.title }}</h2>
 
-                <div class="form-group">
-                    <label for="quantity">Số lượng muốn mượn</label>
-                    <input type="number"
-                           id="quantity"
-                           name="quantity"
-                           min="1"
-                           max="{{ available_quantity }}"
-                           value="{{ quantity }}"
-                           required>
+                <p class="borrow-book-author">
+                    {% if book.authors %}
+                        {{ book.authors | map(attribute='name') | join(', ') }}
+                    {% else %}
+                        Chưa rõ tác giả
+                    {% endif %}
+                </p>
+
+                {% if selected_copy is defined and selected_copy %}
+                    <p class="borrow-book-branch">
+                        <strong>Chi nhánh:</strong>
+                        {{ selected_copy.branch.name if selected_copy.branch else "—" }}
+                    </p>
+                {% endif %}
+
+                <div class="borrow-book-status">
+                    {% if available_quantity > 0 %}
+                        <span class="borrow-status available">
+                            Còn {{ available_quantity }} cuốn
+                        </span>
+                    {% else %}
+                        <span class="borrow-status unavailable">
+                            Đã hết sách
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- BOOK INFO + FORM -->
+        <div class="borrow-request-content">
+
+            <div class="borrow-info-box">
+                <h3>Thông tin sách</h3>
+
+                <div class="borrow-info-grid">
+                    <div class="borrow-info-item">
+                        <span>ISBN</span>
+                        <strong>{{ book.isbn or "—" }}</strong>
+                    </div>
+
+                    <div class="borrow-info-item">
+                        <span>Nhà xuất bản</span>
+                        <strong>{{ book.publisher.name if book.publisher else "—" }}</strong>
+                    </div>
+
+                    <div class="borrow-info-item">
+                        <span>Thể loại</span>
+                        <strong>{{ book.category.name if book.category else "Chưa phân loại" }}</strong>
+                    </div>
+
+                    <div class="borrow-info-item">
+                        <span>Số lượng còn</span>
+                        <strong>{{ available_quantity }}</strong>
+                    </div>
+                </div>
+            </div>
+
+            <form action="{{ form_action }}" method="post" class="borrow-request-form">
+
+                <div class="borrow-form-row">
+
+                    <!-- CHI NHÁNH MƯỢN -->
+                    <div class="form-group borrow-branch-group">
+                        <label for="branch_id">Chi nhánh mượn</label>
+
+                        {% if selected_copy is defined and selected_copy and not edit_mode %}
+                            <input type="text"
+                                   value="{{ selected_copy.branch.name if selected_copy.branch else 'Chi nhánh đã chọn' }}"
+                                   readonly>
+
+                            <input type="hidden"
+                                   id="branch_id"
+                                   name="branch_id"
+                                   value="{{ selected_copy.branch_id }}">
+
+                            <small>
+                                Bạn đang mượn sách tại chi nhánh này.
+                            </small>
+                        {% else %}
+                            <select id="branch_id"
+                                    name="branch_id"
+                                    required>
+                                <option value="" disabled hidden
+                                        {% if not selected_branch_id %}
+                                            selected
+                                        {% endif %}>
+                                    Chọn chi nhánh
+                                </option>
+
+                                {% set branch_options = available_copies if available_copies is defined and available_copies else book.copies %}
+
+                                {% for copy in branch_options %}
+                                    {% if (copy.available_quantity or 0) > 0 %}
+                                        <option value="{{ copy.branch_id }}"
+                                                data-available="{{ copy.available_quantity }}"
+                                                {% if selected_branch_id is defined and selected_branch_id and selected_branch_id == copy.branch_id %}
+                                                    selected
+                                                {% endif %}>
+                                            {{ copy.branch.name if copy.branch else "Chi nhánh #" ~ copy.branch_id }}
+                                        </option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+
+                            {% if edit_mode %}
+                                <small>
+                                    Bạn có thể đổi chi nhánh mượn tại đây rồi bấm Lưu thay đổi.
+                                </small>
+                            {% else %}
+                                <small>
+                                    Vui lòng chọn chi nhánh muốn mượn sách.
+                                </small>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                    <!-- SỐ LƯỢNG -->
+                    <div class="form-group borrow-quantity-group">
+                        <label for="quantity">Số lượng</label>
+
+                        <input type="number"
+                               id="quantity"
+                               name="quantity"
+                               value="{% if selected_copy is defined and selected_copy %}{{ quantity or 1 }}{% else %}1{% endif %}"
+                               min="1"
+                               {% if selected_copy is defined and selected_copy %}
+                                   max="{{ available_quantity }}"
+                               {% endif %}
+                               required>
+
+                        {% if selected_copy is defined and selected_copy %}
+                            <small id="quantity-help">
+                                Bạn có thể mượn tối đa {{ available_quantity }} cuốn ở chi nhánh này.
+                            </small>
+                        {% else %}
+                            <small id="quantity-help">
+                                Chọn chi nhánh để xem số lượng còn.
+                            </small>
+                        {% endif %}
+                    </div>
+
                 </div>
 
                 <div class="form-group">
                     <label for="note">Ghi chú</label>
                     <textarea id="note"
                               name="note"
-                              rows="4"
-                              placeholder="Ví dụ: Em cần mượn sách để học trong tuần này...">{{ note }}</textarea>
+                              rows="5"
+                              placeholder="Ví dụ: Em cần mượn sách để học trong tuần này...">{{ note or "" }}</textarea>
                 </div>
 
                 <div class="borrow-request-actions">
-                    {% if edit_mode %}
-                        <a href="{{ url_for('borrow.history') }}" class="btn-cancel">
-                            Quay lại lịch sử
-                        </a>
-                    {% else %}
-                        <a href="{{ url_for('book.detail', book_id=book.id) }}" class="btn-cancel">
-                            Quay lại
-                        </a>
-                    {% endif %}
+                    <a href="{{ url_for('borrow.history') }}" class="btn-cancel-request">
+                        Quay lại
+                    </a>
 
-                    <button type="submit" class="btn-submit-borrow">
-                        {{ submit_text }}
+                    <button type="submit" class="btn-submit-request">
+                        {{ submit_text or "Gửi yêu cầu mượn" }}
                     </button>
                 </div>
+
             </form>
         </div>
+
     </div>
 </div>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const branchSelect = document.getElementById("branch_id");
+    const quantityInput = document.getElementById("quantity");
+    const quantityHelp = document.getElementById("quantity-help");
+
+    if (!branchSelect || !quantityInput) {
+        return;
+    }
+
+    if (branchSelect.tagName.toLowerCase() !== "select") {
+        return;
+    }
+
+    function updateQuantityByBranch(resetQuantity) {
+        const selectedOption = branchSelect.options[branchSelect.selectedIndex];
+        const available = selectedOption ? selectedOption.getAttribute("data-available") : null;
+
+        if (available) {
+            quantityInput.max = available;
+
+            if (resetQuantity) {
+                quantityInput.value = 1;
+            }
+
+            if (!quantityInput.value || parseInt(quantityInput.value) > parseInt(available)) {
+                quantityInput.value = 1;
+            }
+
+            if (quantityHelp) {
+                quantityHelp.textContent = `Bạn có thể mượn tối đa ${available} cuốn ở chi nhánh này.`;
+            }
+        } else {
+            quantityInput.removeAttribute("max");
+            quantityInput.value = 1;
+
+            if (quantityHelp) {
+                quantityHelp.textContent = "Chọn chi nhánh để xem số lượng còn.";
+            }
+        }
+    }
+
+    branchSelect.addEventListener("change", function () {
+        updateQuantityByBranch(true);
+    });
+
+    updateQuantityByBranch(false);
+});
+</script>
 {% endblock %}

@@ -1,8 +1,11 @@
-from flask import render_template, request, redirect, flash
+from flask import render_template, request, redirect, url_for, flash
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload
 from werkzeug.security import generate_password_hash
 
 from ThuVienSo import db
+from ThuVienSo.controller.borrow_controller import safe_int
+from ThuVienSo.data.models.book import Book
 from ThuVienSo.data.models.role import Role
 from ThuVienSo.data.models.user import User
 from ThuVienSo.data.models.borrow_request import BorrowRequest
@@ -12,7 +15,7 @@ from ThuVienSo.data.models.category import Category
 from ThuVienSo.data.models.publisher import Publisher
 
 USER_STATUSES = ["active", "locked", "inactive"]
-
+BOOK_STATUSES = ["available", "out_of_stock"]
 
 def _get_next_url(default="/admin?tab=users"):
     return request.form.get("next_url") or default
@@ -78,11 +81,18 @@ def admin_dashboard():
     users = User.query.order_by(User.id.asc()).all()
     roles = Role.query.order_by(Role.id.asc()).all()
 
+    book_query = Book.query
+
     # BOOKS
     categories = Category.query.order_by(Category.name.asc()).all()
     publishers = Publisher.query.order_by(Publisher.name.asc()).all()
 
-    book_query = Book.query
+    books = (
+        Book.query
+        .options(joinedload(Book.copies))
+        .order_by(Book.created_at.desc())
+        .all()
+    )
 
     if selected_category:
         category_id = safe_int(selected_category)
@@ -140,7 +150,6 @@ def admin_dashboard():
 def list_users():
     users = User.query.order_by(User.id.asc()).all()
     roles = Role.query.order_by(Role.id.asc()).all()
-
     return render_template(
         "admin/users.html",
         users=users,

@@ -243,6 +243,16 @@ Inf user
 .navbar-links a:hover {
     color: #fff;
 }
+.branch-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.branch-actions {
+    display: flex;
+    gap: 10px; /* tạo khoảng cách giữa 2 nút */
+}
 
 /* Main */
 .main-content {

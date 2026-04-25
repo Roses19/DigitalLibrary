@@ -32,3 +32,10 @@ class BorrowRecordItem(db.Model):
         "Book",
         backref="borrow_record_items"
     )
+    book_copy_id = db.Column(
+        db.Integer,
+        db.ForeignKey("book_copies.id"),
+        nullable=True
+    )
+
+    book_copy = db.relationship("BookCopy")

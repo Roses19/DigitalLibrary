@@ -1,67 +1,612 @@
-from flask import request, render_template, redirect, url_for, flash
-from ThuVienSo import db
+from flask import render_template, request, redirect, url_for, flash, session
+from sqlalchemy import or_
+from sqlalchemy.orm import joinedload
 
+from ThuVienSo import db
 from ThuVienSo.data.models.book import Book
+from ThuVienSo.data.models.book_copy import BookCopy
 from ThuVienSo.data.models.category import Category
 from ThuVienSo.data.models.publisher import Publisher
 from ThuVienSo.data.models.author import Author
+from ThuVienSo.data.models.user import User
+from ThuVienSo.data.models.borrow_request import BorrowRequest
+from ThuVienSo.data.models.borrow_request_item import BorrowRequestItem
+from ThuVienSo.data.models.branch import Branch
 
-from ThuVienSo.controller.borrow_controller import get_user_borrow_states
+
+# =========================================================
+# HELPER
+# =========================================================
+def get_current_user():
+    user_id = session.get("user_id")
+
+    if user_id:
+        return User.query.get(user_id)
+
+    username = session.get("username")
+
+    if username:
+        return User.query.filter_by(username=username).first()
+
+    return None
 
 
-# ================== HELPER ==================
-def safe_int(value, default=0):
+def safe_int(value, default=None):
     try:
+        if value is None or value == "":
+            return default
         return int(value)
     except (TypeError, ValueError):
         return default
 
-def admin_books_redirect():
-    next_url = request.form.get("next_url")
 
-    if next_url:
-        return redirect(next_url)
+def get_book_available_quantity(book):
+    """
+    Tổng số lượng còn của sách ở tất cả chi nhánh.
+    """
+    if not book or not getattr(book, "copies", None):
+        return 0
 
-    return redirect("/admin?tab=books")
+    return sum(
+        (copy.available_quantity or 0)
+        for copy in book.copies
+    )
 
 
-# ================== HOME ==================
+def get_book_total_quantity(book):
+    """
+    Tổng số lượng sách ở tất cả chi nhánh.
+    """
+    if not book or not getattr(book, "copies", None):
+        return 0
+
+    return sum(
+        (copy.total_quantity or 0)
+        for copy in book.copies
+    )
+
+
+def attach_book_quantity(book):
+    """
+    Gắn quantity tạm vào object Book để template dùng được:
+    - book.available_quantity
+    - book.total_quantity
+    - book.display_available_quantity
+    - book.display_total_quantity
+    """
+    if not book:
+        return None
+
+    available_quantity = get_book_available_quantity(book)
+    total_quantity = get_book_total_quantity(book)
+
+    book.display_available_quantity = available_quantity
+    book.display_total_quantity = total_quantity
+
+    try:
+        book.available_quantity = available_quantity
+    except Exception:
+        pass
+
+    try:
+        book.total_quantity = total_quantity
+    except Exception:
+        pass
+
+    return book
+
+
+def attach_books_quantity(books):
+    for book in books:
+        attach_book_quantity(book)
+
+    return books
+
+
+def get_user_borrow_states():
+    """
+    Dùng cho book_card.html.
+    Nếu có phiếu pending thì trả về request_id để cho phép sửa phiếu mượn.
+    """
+    current_user = get_current_user()
+
+    if not current_user:
+        return {}
+
+    pending_items = (
+        BorrowRequestItem.query
+        .join(BorrowRequest)
+        .filter(
+            BorrowRequest.user_id == current_user.id,
+            BorrowRequest.status == "pending"
+        )
+        .order_by(BorrowRequest.created_at.desc())
+        .all()
+    )
+
+    states = {}
+
+    for item in pending_items:
+        if item.book_id not in states:
+            states[item.book_id] = {
+                "status": "pending",
+                "request_id": item.borrow_request_id
+            }
+
+    return states
+
+
+def base_book_query():
+    """
+    Query sách kèm thông tin liên quan.
+    """
+    return (
+        Book.query
+        .options(
+            joinedload(Book.authors),
+            joinedload(Book.category),
+            joinedload(Book.publisher),
+            joinedload(Book.copies).joinedload(BookCopy.branch),
+        )
+    )
+
+
+def get_dropdown_data():
+    categories = Category.query.order_by(Category.name.asc()).all()
+    publishers = Publisher.query.order_by(Publisher.name.asc()).all()
+    branches = Branch.query.order_by(Branch.name.asc()).all()
+
+    return categories, publishers, branches
+
+
+def render_book_list(
+    books,
+    page_title="Danh sách Sách",
+    keyword="",
+    category_id=None,
+    publisher_id=None,
+    branch_id=None,
+    status="",
+    is_advanced_empty=False,
+):
+    """
+    Render chung cho list/search/advanced search.
+    """
+    categories, publishers, branches = get_dropdown_data()
+
+    return render_template(
+        "books/list.html",
+        books=books,
+        categories=categories,
+        publishers=publishers,
+        branches=branches,
+        keyword=keyword,
+        selected_category_id=category_id,
+        selected_publisher_id=publisher_id,
+        selected_branch_id=branch_id,
+        selected_status=status,
+        user_borrow_states=get_user_borrow_states(),
+        show_filters=True,
+        show_advanced=True,
+        page_title=page_title,
+        is_advanced_empty=is_advanced_empty,
+    )
+
+
+def apply_book_filters(query, keyword="", category_id=None, publisher_id=None, branch_id=None):
+    """
+    Apply lọc chung cho search và advanced search.
+    """
+    if keyword:
+        search_text = f"%{keyword}%"
+
+        query = (
+            query
+            .outerjoin(Book.authors)
+            .outerjoin(Book.category)
+            .outerjoin(Book.publisher)
+            .filter(
+                or_(
+                    Book.title.ilike(search_text),
+                    Book.isbn.ilike(search_text),
+                    Author.name.ilike(search_text),
+                    Category.name.ilike(search_text),
+                    Publisher.name.ilike(search_text),
+                )
+            )
+        )
+
+    if category_id:
+        query = query.filter(Book.category_id == category_id)
+
+    if publisher_id:
+        query = query.filter(Book.publisher_id == publisher_id)
+
+    if branch_id:
+        query = query.join(Book.copies).filter(BookCopy.branch_id == branch_id)
+
+    return query
+
+
+def filter_books_by_status(books, status):
+    """
+    Lọc tình trạng còn/hết sau khi đã attach quantity.
+    """
+    if status == "available":
+        return [
+            book for book in books
+            if (book.available_quantity or 0) > 0
+        ]
+
+    if status == "unavailable":
+        return [
+            book for book in books
+            if (book.available_quantity or 0) <= 0
+        ]
+
+    return books
+
+
+# =========================================================
+# HOME
+# =========================================================
 def get_home_books():
-    return Book.query.order_by(Book.created_at.desc()).limit(4).all()
+    """
+    Trả về danh sách sách nổi bật cho trang chủ.
+    KHÔNG render_template ở đây vì home_routes.py mới là nơi render trang chủ.
+    """
+    books = (
+        base_book_query()
+        .order_by(Book.id.asc())
+        .limit(4)
+        .all()
+    )
+
+    attach_books_quantity(books)
+
+    return books
 
 
-# ================== CATEGORY ==================
+# =========================================================
+# BOOK LIST
+# =========================================================
+def get_book_list():
+    """
+    Danh sách tất cả sách.
+    """
+    books = (
+        base_book_query()
+        .order_by(Book.id.asc())
+        .all()
+    )
+
+    attach_books_quantity(books)
+
+    return render_book_list(
+        books=books,
+        page_title="Danh sách Sách",
+        keyword="",
+        category_id=None,
+        publisher_id=None,
+        branch_id=None,
+        status="",
+        is_advanced_empty=False,
+    )
+
+
+# =========================================================
+# SEARCH BOOKS
+# =========================================================
+def search_books():
+    """
+    Tìm kiếm cơ bản.
+    Hỗ trợ cả keyword và q.
+    Có truyền đủ bộ lọc sang list.html.
+    """
+    keyword = request.args.get("keyword", "").strip()
+    q = request.args.get("q", "").strip()
+
+    if not keyword and q:
+        keyword = q
+
+    category_id = safe_int(request.args.get("category_id"))
+    publisher_id = safe_int(request.args.get("publisher_id"))
+    branch_id = safe_int(request.args.get("branch_id"))
+    status = request.args.get("status", "").strip()
+
+    query = apply_book_filters(
+        base_book_query(),
+        keyword=keyword,
+        category_id=category_id,
+        publisher_id=publisher_id,
+        branch_id=branch_id,
+    )
+
+    books = (
+        query
+        .order_by(Book.id.asc())
+        .distinct()
+        .all()
+    )
+
+    attach_books_quantity(books)
+    books = filter_books_by_status(books, status)
+
+    return render_book_list(
+        books=books,
+        page_title="Kết quả tìm kiếm",
+        keyword=keyword,
+        category_id=category_id,
+        publisher_id=publisher_id,
+        branch_id=branch_id,
+        status=status,
+        is_advanced_empty=False,
+    )
+
+
+# =========================================================
+# ADVANCED SEARCH
+# =========================================================
+def advanced_search_controller():
+    """
+    Tìm kiếm nâng cao.
+    Nếu chưa nhập điều kiện thì không load toàn bộ sách.
+    """
+    keyword = request.args.get("keyword", "").strip()
+    q = request.args.get("q", "").strip()
+
+    if not keyword and q:
+        keyword = q
+
+    category_id = safe_int(request.args.get("category_id"))
+    publisher_id = safe_int(request.args.get("publisher_id"))
+    branch_id = safe_int(request.args.get("branch_id"))
+    status = request.args.get("status", "").strip()
+
+    has_filter = bool(
+        keyword
+        or category_id
+        or publisher_id
+        or branch_id
+        or status
+    )
+
+    if not has_filter:
+        return render_book_list(
+            books=[],
+            page_title="Tìm kiếm nâng cao",
+            keyword=keyword,
+            category_id=category_id,
+            publisher_id=publisher_id,
+            branch_id=branch_id,
+            status=status,
+            is_advanced_empty=True,
+        )
+
+    query = apply_book_filters(
+        base_book_query(),
+        keyword=keyword,
+        category_id=category_id,
+        publisher_id=publisher_id,
+        branch_id=branch_id,
+    )
+
+    books = (
+        query
+        .order_by(Book.id.asc())
+        .distinct()
+        .all()
+    )
+
+    attach_books_quantity(books)
+    books = filter_books_by_status(books, status)
+
+    return render_book_list(
+        books=books,
+        page_title="Tìm kiếm nâng cao",
+        keyword=keyword,
+        category_id=category_id,
+        publisher_id=publisher_id,
+        branch_id=branch_id,
+        status=status,
+        is_advanced_empty=False,
+    )
+
+
+# =========================================================
+# BOOK DETAIL
+# =========================================================
+def get_book_detail(book_id):
+    """
+    Chi tiết sách.
+    Trang detail.html của bạn đang dùng:
+    - book.copies
+    - copy.branch
+    - available
+    - total
+    """
+    book = (
+        base_book_query()
+        .filter(Book.id == book_id)
+        .first()
+    )
+
+    if not book:
+        return render_template(
+            "books/detail.html",
+            book=None
+        )
+
+    attach_book_quantity(book)
+
+    available = book.available_quantity or 0
+    total = book.total_quantity or 0
+
+    return render_template(
+        "books/detail.html",
+        book=book,
+        available=available,
+        total=total,
+        user_borrow_states=get_user_borrow_states()
+    )
+
+
+# =========================================================
+# ADMIN BOOK LIST
+# =========================================================
+def get_admin_book_list():
+    books = (
+        base_book_query()
+        .order_by(Book.id.asc())
+        .all()
+    )
+
+    attach_books_quantity(books)
+
+    categories, publishers, branches = get_dropdown_data()
+
+    return render_template(
+        "admin/books/index.html",
+        books=books,
+        categories=categories,
+        publishers=publishers,
+        branches=branches
+    )
+
+
+# =========================================================
+# CREATE BOOK
+# =========================================================
+def create_book():
+    """
+    Thêm sách cơ bản.
+    Hỗ trợ form có các field:
+    title, isbn, pages, publish_year, language,
+    description, cover_image, category_id, publisher_id
+    """
+    title = request.form.get("title", "").strip()
+
+    if not title:
+        flash("Tên sách không được để trống.", "error")
+        return redirect(url_for("book.book_list"))
+
+    isbn = request.form.get("isbn", "").strip()
+    pages = safe_int(request.form.get("pages"))
+    publish_year = safe_int(request.form.get("publish_year"))
+    language = request.form.get("language", "").strip()
+    description = request.form.get("description", "").strip()
+    cover_image = request.form.get("cover_image", "").strip()
+    category_id = safe_int(request.form.get("category_id"))
+    publisher_id = safe_int(request.form.get("publisher_id"))
+
+    book = Book(
+        title=title,
+        isbn=isbn or None,
+        pages=pages,
+        publish_year=publish_year,
+        language=language or None,
+        description=description or None,
+        cover_image=cover_image or None,
+        category_id=category_id,
+        publisher_id=publisher_id
+    )
+
+    db.session.add(book)
+    db.session.commit()
+
+    flash("Đã thêm sách mới.", "success")
+    return redirect(url_for("book.detail", book_id=book.id))
+
+
+# =========================================================
+# UPDATE BOOK
+# =========================================================
+def update_book(book_id):
+    book = Book.query.get(book_id)
+
+    if not book:
+        flash("Không tìm thấy sách cần cập nhật.", "error")
+        return redirect(url_for("book.book_list"))
+
+    title = request.form.get("title", "").strip()
+
+    if not title:
+        flash("Tên sách không được để trống.", "error")
+        return redirect(url_for("book.detail", book_id=book.id))
+
+    book.title = title
+    book.isbn = request.form.get("isbn", "").strip() or None
+    book.pages = safe_int(request.form.get("pages"))
+    book.publish_year = safe_int(request.form.get("publish_year"))
+    book.language = request.form.get("language", "").strip() or None
+    book.description = request.form.get("description", "").strip() or None
+    book.cover_image = request.form.get("cover_image", "").strip() or None
+    book.category_id = safe_int(request.form.get("category_id"))
+    book.publisher_id = safe_int(request.form.get("publisher_id"))
+
+    db.session.commit()
+
+    flash("Đã cập nhật thông tin sách.", "success")
+    return redirect(url_for("book.detail", book_id=book.id))
+
+
+# =========================================================
+# DELETE BOOK
+# =========================================================
+def delete_book(book_id):
+    book = Book.query.get(book_id)
+
+    if not book:
+        flash("Không tìm thấy sách cần xóa.", "error")
+        return redirect(url_for("book.book_list"))
+
+    db.session.delete(book)
+    db.session.commit()
+
+    flash("Đã xóa sách.", "success")
+    return redirect(url_for("book.book_list"))
+
+
+# =========================================================
+# CATEGORY LIST
+# =========================================================
 def get_categories():
-    categories = Category.query.all()
-    return render_template("books/categories.html", categories=categories)
+    categories = Category.query.order_by(Category.id.asc()).all()
+
+    return render_template(
+        "books/categories.html",
+        categories=categories
+    )
 
 
+# =========================================================
+# CREATE CATEGORY
+# =========================================================
 def create_category():
     name = request.form.get("name", "").strip()
-    description = request.form.get("description", "").strip()
 
     if not name:
         flash("Tên danh mục không được để trống.", "error")
         return redirect(url_for("book.categories"))
 
-    exists = Category.query.filter(db.func.lower(Category.name) == name.lower()).first()
+    existed = Category.query.filter(Category.name == name).first()
 
-    if exists:
-        flash(f'Danh mục "{name}" đã tồn tại.', "error")
+    if existed:
+        flash("Danh mục này đã tồn tại.", "warning")
         return redirect(url_for("book.categories"))
 
-    new_category = Category(
-        name=name,
-        description=description
-    )
+    category = Category(name=name)
 
-    db.session.add(new_category)
+    db.session.add(category)
     db.session.commit()
 
-    flash(f'Đã thêm danh mục "{name}".', "success")
+    flash("Đã thêm danh mục.", "success")
     return redirect(url_for("book.categories"))
 
 
+# =========================================================
+# UPDATE CATEGORY
+# =========================================================
 def update_category(category_id):
     category = Category.query.get(category_id)
 
@@ -70,30 +615,22 @@ def update_category(category_id):
         return redirect(url_for("book.categories"))
 
     name = request.form.get("name", "").strip()
-    description = request.form.get("description", "").strip()
 
     if not name:
         flash("Tên danh mục không được để trống.", "error")
         return redirect(url_for("book.categories"))
 
-    exists = Category.query.filter(
-        db.func.lower(Category.name) == name.lower(),
-        Category.id != category_id
-    ).first()
-
-    if exists:
-        flash(f'Danh mục "{name}" đã tồn tại.', "error")
-        return redirect(url_for("book.categories"))
-
     category.name = name
-    category.description = description
 
     db.session.commit()
 
-    flash(f'Đã cập nhật danh mục "{name}".', "success")
+    flash("Đã cập nhật danh mục.", "success")
     return redirect(url_for("book.categories"))
 
 
+# =========================================================
+# DELETE CATEGORY
+# =========================================================
 def delete_category(category_id):
     category = Category.query.get(category_id)
 
@@ -101,387 +638,136 @@ def delete_category(category_id):
         flash("Không tìm thấy danh mục.", "error")
         return redirect(url_for("book.categories"))
 
-    if category.books:
-        flash(f'Không thể xóa "{category.name}" vì đang có sách.', "error")
-        return redirect(url_for("book.categories"))
-
     db.session.delete(category)
     db.session.commit()
 
-    flash(f'Đã xóa "{category.name}".', "success")
+    flash("Đã xóa danh mục.", "success")
     return redirect(url_for("book.categories"))
 
 
-# ================== SEARCH HELPER ==================
-def to_int_list(values):
-    result = []
-
-    for value in values:
-        try:
-            result.append(int(value))
-        except (TypeError, ValueError):
-            pass
-
-    return result
-
-
-def get_book_status_value(book):
-    available_quantity = getattr(book, "available_quantity", 0) or 0
-
-    if available_quantity > 0:
-        return "available"
-
-    return "unavailable"
-
-
-def get_status_label(status_value):
-    if status_value == "available":
-        return "Còn sách"
-
-    if status_value == "unavailable":
-        return "Đã hết"
-
-    return status_value
-
-
-def get_status_options_from_books(books):
-    seen = set()
-    status_options = []
-
-    for book in books:
-        status_value = get_book_status_value(book)
-
-        if status_value not in seen:
-            seen.add(status_value)
-            status_options.append({
-                "value": status_value,
-                "label": get_status_label(status_value)
-            })
-
-    status_options.sort(
-        key=lambda item: 0 if item["value"] == "available" else 1
-    )
-
-    return status_options
-
-
-def get_filter_options_from_books(books):
-    category_ids = []
-    publisher_ids = []
-
-    for book in books:
-        if book.category_id and book.category_id not in category_ids:
-            category_ids.append(book.category_id)
-
-        if book.publisher_id and book.publisher_id not in publisher_ids:
-            publisher_ids.append(book.publisher_id)
-
-    categories = []
-    publishers = []
-
-    if category_ids:
-        categories = (
-            Category.query
-            .filter(Category.id.in_(category_ids))
-            .order_by(Category.name.asc())
-            .all()
-        )
-
-    if publisher_ids:
-        publishers = (
-            Publisher.query
-            .filter(Publisher.id.in_(publisher_ids))
-            .order_by(Publisher.name.asc())
-            .all()
-        )
-
-    status_options = get_status_options_from_books(books)
-
-    return categories, publishers, status_options
-
-
-def build_book_query(keyword="", category_ids=None, publisher_ids=None, statuses=None):
-    query = Book.query
-
-    category_ids = to_int_list(category_ids or [])
-    publisher_ids = to_int_list(publisher_ids or [])
-    statuses = statuses or []
-
-    if keyword:
-        query = query.outerjoin(Book.authors).filter(
-            db.or_(
-                Book.title.ilike(f"%{keyword}%"),
-                Book.isbn.ilike(f"%{keyword}%"),
-                Author.name.ilike(f"%{keyword}%")
-            )
-        )
-
-    if category_ids:
-        query = query.filter(Book.category_id.in_(category_ids))
-
-    if publisher_ids:
-        query = query.filter(Book.publisher_id.in_(publisher_ids))
-
-    if statuses:
-        if "available" in statuses and "unavailable" not in statuses:
-            query = query.filter(Book.available_quantity > 0)
-
-        elif "unavailable" in statuses and "available" not in statuses:
-            query = query.filter(Book.available_quantity <= 0)
-
-    return query.distinct()
-
-
-# ================== SEARCH ==================
-def search_books():
-    keyword = request.args.get("q", "").strip()
-
-    selected_categories = request.args.getlist("category")
-    selected_publishers = request.args.getlist("publisher")
-    selected_statuses = request.args.getlist("status")
-
-    filter_applied = request.args.get("filter") == "1"
-
-    searched = bool(
-        keyword or selected_categories or selected_publishers or selected_statuses
-    )
-
-    if keyword:
-        matched_books = (
-            build_book_query(keyword=keyword)
-            .order_by(Book.created_at.desc())
-            .all()
-        )
-    else:
-        matched_books = []
-
-    if keyword:
-        categories, publishers, status_options = get_filter_options_from_books(matched_books)
-
-        if not filter_applied:
-            selected_categories = [str(category.id) for category in categories]
-            selected_publishers = [str(publisher.id) for publisher in publishers]
-            selected_statuses = [status["value"] for status in status_options]
-
-    else:
-        categories = Category.query.order_by(Category.name.asc()).all()
-        publishers = Publisher.query.order_by(Publisher.name.asc()).all()
-
-        all_books = Book.query.all()
-        status_options = get_status_options_from_books(all_books)
-
-    if searched:
-        if keyword and not filter_applied:
-            books = matched_books
-        else:
-            books = (
-                build_book_query(
-                    keyword=keyword,
-                    category_ids=selected_categories,
-                    publisher_ids=selected_publishers,
-                    statuses=selected_statuses
-                )
-                .order_by(Book.created_at.desc())
-                .all()
-            )
-    else:
-        books = []
-
-    return render_template(
-        "books/search.html",
-        books=books,
-        keyword=keyword,
-        searched=searched,
-        categories=categories,
-        publishers=publishers,
-        status_options=status_options,
-        selected_categories=selected_categories,
-        selected_publishers=selected_publishers,
-        selected_statuses=selected_statuses,
-        user_borrow_states=get_user_borrow_states()
-    )
-
-
-# ================== ADVANCED SEARCH ==================
-def advanced_search_controller():
-    keyword = request.args.get("q", "").strip()
-    publisher_id = request.args.get("publisher_id", "").strip()
-    category_id = request.args.get("category_id", "").strip()
-
-    query = Book.query
-
-    if keyword:
-        query = query.outerjoin(Book.authors).filter(
-            db.or_(
-                Book.title.ilike(f"%{keyword}%"),
-                Book.isbn.ilike(f"%{keyword}%"),
-                Author.name.ilike(f"%{keyword}%")
-            )
-        )
-
-    if publisher_id:
-        query = query.filter(Book.publisher_id == int(publisher_id))
-
-    if category_id:
-        query = query.filter(Book.category_id == int(category_id))
-
-    books = query.distinct().order_by(Book.created_at.desc()).all()
-
-    if keyword:
-        categories, publishers, status_options = get_filter_options_from_books(books)
-    else:
-        categories = Category.query.order_by(Category.name.asc()).all()
-        publishers = Publisher.query.order_by(Publisher.name.asc()).all()
-        status_options = get_status_options_from_books(Book.query.all())
-
-    selected_categories = [category_id] if category_id else []
-    selected_publishers = [publisher_id] if publisher_id else []
-    selected_statuses = [status["value"] for status in status_options] if keyword else []
-
-    return render_template(
-        "books/search.html",
-        books=books,
-        keyword=keyword,
-        searched=True,
-        categories=categories,
-        publishers=publishers,
-        status_options=status_options,
-        selected_categories=selected_categories,
-        selected_publishers=selected_publishers,
-        selected_statuses=selected_statuses,
-        user_borrow_states=get_user_borrow_states()
-    )
-
-
-# ================== DETAIL ==================
-def get_book_detail(book_id):
+# =========================================================
+# BOOK COPY / CHI NHÁNH LƯU TRỮ
+# =========================================================
+def create_book_copy(book_id):
+    """
+    Thêm thông tin lưu trữ sách tại một chi nhánh.
+    Form cần có:
+    - branch_id
+    - shelf_location
+    - total_quantity
+    - available_quantity
+    """
     book = Book.query.get(book_id)
 
     if not book:
-        return render_template("books/detail.html", book=None)
+        flash("Không tìm thấy sách.", "error")
+        return redirect(url_for("book.book_list"))
 
-    return render_template(
-        "books/detail.html",
-        book=book,
-        user_borrow_states=get_user_borrow_states()
-    )
+    branch_id = safe_int(request.form.get("branch_id"))
+    shelf_location = request.form.get("shelf_location", "").strip()
+    total_quantity = safe_int(request.form.get("total_quantity"), 0)
+    available_quantity = safe_int(request.form.get("available_quantity"), 0)
 
+    if not branch_id:
+        flash("Vui lòng chọn chi nhánh.", "error")
+        return redirect(url_for("book.detail", book_id=book.id))
 
-# ================== BOOK LIST ==================
-def get_book_list():
-    books = Book.query.order_by(Book.created_at.desc()).all()
+    if total_quantity < 0 or available_quantity < 0:
+        flash("Số lượng không được nhỏ hơn 0.", "error")
+        return redirect(url_for("book.detail", book_id=book.id))
 
-    return render_template(
-        "books/list.html",
-        books=books,
-        user_borrow_states=get_user_borrow_states()
-    )
+    if available_quantity > total_quantity:
+        flash("Số lượng còn không được lớn hơn tổng số lượng.", "error")
+        return redirect(url_for("book.detail", book_id=book.id))
 
+    existed_copy = BookCopy.query.filter_by(
+        book_id=book.id,
+        branch_id=branch_id
+    ).first()
 
-# ================== ADMIN BOOK LIST ==================
-def get_admin_book_list():
-    books = Book.query.order_by(Book.created_at.desc()).all()
-    categories = Category.query.order_by(Category.name.asc()).all()
-    publishers = Publisher.query.order_by(Publisher.name.asc()).all()
+    if existed_copy:
+        flash("Sách này đã có thông tin lưu trữ ở chi nhánh đã chọn.", "warning")
+        return redirect(url_for("book.detail", book_id=book.id))
 
-    return redirect("/admin?tab=books"
-)
-
-
-# ================== CREATE BOOK ==================
-def create_book():
-    title = request.form.get("title", "").strip()
-    isbn = request.form.get("isbn", "").strip()
-
-    category_id = request.form.get("category_id")
-    publisher_id = request.form.get("publisher_id")
-
-    available_quantity = safe_int(
-        request.form.get("available_quantity") or request.form.get("quantity"),
-        0
-    )
-
-    if not title:
-        flash("Tên sách không được để trống.", "error")
-        return admin_books_redirect()
-
-    if available_quantity < 0:
-        available_quantity = 0
-
-    new_book = Book(
-        title=title,
-        isbn=isbn,
-        category_id=int(category_id) if category_id else None,
-        publisher_id=int(publisher_id) if publisher_id else None,
+    book_copy = BookCopy(
+        book_id=book.id,
+        branch_id=branch_id,
+        shelf_location=shelf_location or None,
+        total_quantity=total_quantity,
         available_quantity=available_quantity
     )
 
-    # Nếu model có total_quantity thì set luôn cho đồng bộ.
-    if hasattr(new_book, "total_quantity"):
-        new_book.total_quantity = available_quantity
-
-    db.session.add(new_book)
+    db.session.add(book_copy)
     db.session.commit()
 
-    flash("Thêm sách thành công.", "success")
-    return admin_books_redirect()
+    flash("Đã thêm thông tin lưu trữ sách.", "success")
+    return redirect(url_for("book.detail", book_id=book.id))
 
 
-# ================== UPDATE BOOK ==================
-def update_book(book_id):
-    book = Book.query.get(book_id)
+def update_book_copy(copy_id):
+    """
+    Cập nhật thông tin lưu trữ sách theo chi nhánh.
+    """
+    book_copy = BookCopy.query.get(copy_id)
 
-    if not book:
-        flash("Không tìm thấy sách.", "error")
-        return admin_books_redirect()
+    if not book_copy:
+        flash("Không tìm thấy thông tin lưu trữ cần cập nhật.", "error")
+        return redirect(url_for("book.book_list"))
 
-    title = request.form.get("title", "").strip()
-    isbn = request.form.get("isbn", "").strip()
+    book_id = book_copy.book_id
 
-    category_id = request.form.get("category_id")
-    publisher_id = request.form.get("publisher_id")
+    branch_id = safe_int(request.form.get("branch_id"), book_copy.branch_id)
+    shelf_location = request.form.get("shelf_location", "").strip()
+    total_quantity = safe_int(request.form.get("total_quantity"), book_copy.total_quantity or 0)
+    available_quantity = safe_int(request.form.get("available_quantity"), book_copy.available_quantity or 0)
 
-    available_quantity = safe_int(
-        request.form.get("available_quantity") or request.form.get("quantity"),
-        0
-    )
+    if not branch_id:
+        flash("Vui lòng chọn chi nhánh.", "error")
+        return redirect(url_for("book.detail", book_id=book_id))
 
-    if not title:
-        flash("Tên sách không được để trống.", "error")
-        return admin_books_redirect()
+    if total_quantity < 0 or available_quantity < 0:
+        flash("Số lượng không được nhỏ hơn 0.", "error")
+        return redirect(url_for("book.detail", book_id=book_id))
 
-    if available_quantity < 0:
-        available_quantity = 0
+    if available_quantity > total_quantity:
+        flash("Số lượng còn không được lớn hơn tổng số lượng.", "error")
+        return redirect(url_for("book.detail", book_id=book_id))
 
-    book.title = title
-    book.isbn = isbn
-    book.category_id = int(category_id) if category_id else None
-    book.publisher_id = int(publisher_id) if publisher_id else None
-    book.available_quantity = available_quantity
+    existed_copy = BookCopy.query.filter(
+        BookCopy.book_id == book_id,
+        BookCopy.branch_id == branch_id,
+        BookCopy.id != book_copy.id
+    ).first()
 
-    # Nếu model có total_quantity thì đảm bảo total_quantity không nhỏ hơn available_quantity.
-    if hasattr(book, "total_quantity"):
-        current_total = book.total_quantity or 0
+    if existed_copy:
+        flash("Chi nhánh này đã có thông tin lưu trữ cho sách hiện tại.", "warning")
+        return redirect(url_for("book.detail", book_id=book_id))
 
-        if current_total < available_quantity:
-            book.total_quantity = available_quantity
+    book_copy.branch_id = branch_id
+    book_copy.shelf_location = shelf_location or None
+    book_copy.total_quantity = total_quantity
+    book_copy.available_quantity = available_quantity
 
     db.session.commit()
 
-    flash("Cập nhật sách thành công.", "success")
-    return admin_books_redirect()
+    flash("Đã cập nhật thông tin lưu trữ sách.", "success")
+    return redirect(url_for("book.detail", book_id=book_id))
 
 
-# ================== DELETE BOOK ==================
-def delete_book(book_id):
-    book = Book.query.get(book_id)
+def delete_book_copy(copy_id):
+    """
+    Xóa thông tin lưu trữ sách ở một chi nhánh.
+    """
+    book_copy = BookCopy.query.get(copy_id)
 
-    if not book:
-        flash("Không tìm thấy sách.", "error")
-        return admin_books_redirect()
+    if not book_copy:
+        flash("Không tìm thấy thông tin lưu trữ cần xóa.", "error")
+        return redirect(url_for("book.book_list"))
 
-    db.session.delete(book)
+    book_id = book_copy.book_id
+
+    db.session.delete(book_copy)
     db.session.commit()
 
-    flash("Xóa sách thành công.", "success")
-    return admin_books_redirect()
+    flash("Đã xóa thông tin lưu trữ sách.", "success")
+    return redirect(url_for("book.detail", book_id=book_id))

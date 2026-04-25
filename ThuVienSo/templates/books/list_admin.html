@@ -1,13 +1,4 @@
-<div class="book-list-page admin-books-section">
-
-    <div class="admin-list-header">
-
-        <button type="button"
-                class="btn-primary"
-                onclick="toggleForm('add-book-form')">
-            + Thêm sách
-        </button>
-    </div>
+<div class="book-list-page admin-books-section users-page">
 
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
@@ -19,7 +10,21 @@
         {% endif %}
     {% endwith %}
 
-    <!-- Form thêm sách -->
+    <!-- HEADER -->
+    <div class="users-header">
+        <div>
+            <h1>Quản lý sách</h1>
+            <p>Quản lý sách, số lượng và chi nhánh trực tiếp</p>
+        </div>
+
+        <button type="button"
+                class="btn-primary"
+                onclick="toggleForm('add-book-form')">
+            + Thêm sách
+        </button>
+    </div>
+
+    <!-- FORM THÊM SÁCH -->
     <div class="book-form-card" id="add-book-form" style="display:none;">
         <h2>Thêm sách mới</h2>
 
@@ -48,7 +53,6 @@
                     <label>Danh mục</label>
                     <select name="category_id">
                         <option value="">-- Chọn danh mục --</option>
-
                         {% for cat in categories %}
                             <option value="{{ cat.id }}">
                                 {{ cat.name }}
@@ -61,7 +65,6 @@
                     <label>Nhà xuất bản</label>
                     <select name="publisher_id">
                         <option value="">-- Chọn nhà xuất bản --</option>
-
                         {% for publisher in publishers %}
                             <option value="{{ publisher.id }}">
                                 {{ publisher.name }}
@@ -73,13 +76,44 @@
 
             <div class="form-row">
                 <div class="form-group">
+                    <label>Chi nhánh</label>
+                    <select name="branch_id">
+                        <option value="">-- Chọn chi nhánh --</option>
+                        {% for br in branches %}
+                            <option value="{{ br.id }}">
+                                {{ br.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Vị trí kệ</label>
+                    <input type="text"
+                           name="shelf_location"
+                           placeholder="VD: A1-02">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Tổng số lượng</label>
+                    <input type="number"
+                           name="total_quantity"
+                           value="1"
+                           min="0">
+                </div>
+
+                <div class="form-group">
                     <label>Số lượng còn</label>
                     <input type="number"
                            name="available_quantity"
                            value="1"
                            min="0">
                 </div>
+            </div>
 
+            <div class="form-row">
                 <div class="form-group">
                     <label>URL ảnh bìa</label>
                     <input type="text"
@@ -109,11 +143,9 @@
         </form>
     </div>
 
-
-
-    <!-- Bảng sách -->
-    <div class="book-table-wrap">
-        <table class="book-table">
+    <!-- TABLE -->
+    <div class="users-table-wrap">
+        <table class="users-table book-table">
             <thead>
                 <tr>
                     <th>#</th>
@@ -122,8 +154,9 @@
                     <th>Tác giả</th>
                     <th>Danh mục</th>
                     <th>NXB</th>
-                    <th>Số lượng</th>
-                    <th>Trạng thái</th>
+                    <th>Tổng</th>
+                    <th>Còn</th>
+                    <th>Chi nhánh</th>
                     <th>Thao tác</th>
                 </tr>
             </thead>
@@ -131,6 +164,9 @@
             <tbody>
                 {% if books %}
                     {% for book in books %}
+                        {% set total_qty = book.total if book.total is defined else (book.total_quantity if book.total_quantity is defined else (book.available_quantity or 0)) %}
+                        {% set available_qty = book.available if book.available is defined else (book.available_quantity or 0) %}
+
                         <tr>
                             <td>{{ loop.index }}</td>
 
@@ -173,17 +209,27 @@
                             </td>
 
                             <td class="qty-cell">
-                                {{ book.available_quantity or 0 }}
+                                {{ total_qty }}
+                            </td>
+
+                            <td class="qty-cell">
+                                {% if available_qty > 0 %}
+                                    <span class="status-chip available">
+                                        {{ available_qty }}
+                                    </span>
+                                {% else %}
+                                    <span class="status-chip unavailable">
+                                        0
+                                    </span>
+                                {% endif %}
                             </td>
 
                             <td>
-                                <span class="status-chip {% if (book.available_quantity or 0) > 0 %}available{% else %}unavailable{% endif %}">
-                                    {% if (book.available_quantity or 0) > 0 %}
-                                        Còn sách
-                                    {% else %}
-                                        Hết sách
-                                    {% endif %}
-                                </span>
+                                <button type="button"
+                                        class="btn-edit"
+                                        onclick="toggleBranch({{ book.id }})">
+                                    Chi nhánh
+                                </button>
                             </td>
 
                             <td class="cat-actions">
@@ -195,7 +241,7 @@
 
                                 <form action="{{ url_for('book.book_delete', book_id=book.id) }}"
                                       method="post"
-                                      onsubmit="return confirm('Xóa sách \'{{ book.title }}\'?')">
+                                      onsubmit="return confirm('Bạn có chắc muốn xóa sách này không?');">
                                     <input type="hidden" name="next_url" value="/admin?tab=books">
 
                                     <button type="submit" class="btn-delete">
@@ -205,9 +251,9 @@
                             </td>
                         </tr>
 
-                        <!-- Form sửa inline -->
+                        <!-- FORM SỬA SÁCH -->
                         <tr class="edit-row" id="edit-book-{{ book.id }}" style="display:none;">
-                            <td colspan="9">
+                            <td colspan="10">
                                 <form action="{{ url_for('book.book_edit', book_id=book.id) }}"
                                       method="post"
                                       class="edit-inline-form">
@@ -235,7 +281,6 @@
                                             <label>Danh mục</label>
                                             <select name="category_id">
                                                 <option value="">-- Chọn danh mục --</option>
-
                                                 {% for cat in categories %}
                                                     <option value="{{ cat.id }}"
                                                             {% if book.category_id == cat.id %}selected{% endif %}>
@@ -249,7 +294,6 @@
                                             <label>Nhà xuất bản</label>
                                             <select name="publisher_id">
                                                 <option value="">-- Chọn nhà xuất bản --</option>
-
                                                 {% for publisher in publishers %}
                                                     <option value="{{ publisher.id }}"
                                                             {% if book.publisher_id == publisher.id %}selected{% endif %}>
@@ -297,15 +341,164 @@
                                 </form>
                             </td>
                         </tr>
+
+                        <!-- PHẦN CHI NHÁNH SÁCH -->
+                        <tr class="branch-row" id="branch-{{ book.id }}" style="display:none;">
+                            <td colspan="10">
+
+                                <div class="branch-header">
+                                    <h4>Chi nhánh sách</h4>
+
+                                    <div class="branch-actions">
+                                        <button type="button"
+                                                class="btn-secondary"
+                                                onclick="toggleBranch({{ book.id }})">
+                                            Đóng
+                                        </button>
+
+                                        <button type="button"
+                                                class="btn-primary"
+                                                onclick="toggleAddCopy({{ book.id }})">
+                                            + Thêm chi nhánh
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- FORM THÊM CHI NHÁNH -->
+                                <div id="add-copy-{{ book.id }}"
+                                     class="copy-form-wrap"
+                                     style="display:none;">
+                                    <form action="{{ url_for('book.book_copy_create', book_id=book.id) }}"
+                                          method="post"
+                                          class="copy-form">
+                                        <input type="hidden" name="next_url" value="/admin?tab=books">
+
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label>Chi nhánh</label>
+                                                <select name="branch_id" required>
+                                                    <option value="">-- Chọn chi nhánh --</option>
+                                                    {% for br in branches %}
+                                                        <option value="{{ br.id }}">
+                                                            {{ br.name }}
+                                                        </option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label>Vị trí kệ</label>
+                                                <input type="text"
+                                                       name="shelf_location"
+                                                       placeholder="VD: A1-02">
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label>Tổng</label>
+                                                <input type="number"
+                                                       name="total_quantity"
+                                                       value="1"
+                                                       min="0">
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label>Còn</label>
+                                                <input type="number"
+                                                       name="available_quantity"
+                                                       value="1"
+                                                       min="0">
+                                            </div>
+                                        </div>
+
+                                        <div class="form-actions">
+                                            <button class="btn-primary" type="submit">
+                                                Lưu chi nhánh
+                                            </button>
+
+                                            <button type="button"
+                                                    class="btn-secondary"
+                                                    onclick="toggleAddCopy({{ book.id }})">
+                                                Hủy
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+
+                                <!-- BẢNG CHI NHÁNH -->
+                                <table class="inner-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Chi nhánh</th>
+                                            <th>Kệ</th>
+                                            <th>Tổng</th>
+                                            <th>Còn</th>
+                                            <th>Cập nhật</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+                                        {% if book.copies %}
+                                            {% for copy in book.copies %}
+                                                <tr>
+                                                    <td>
+                                                        {{ copy.branch.name if copy.branch else '—' }}
+
+                                                        <form id="copy-form-{{ copy.id }}"
+                                                              action="{{ url_for('book.book_copy_edit', copy_id=copy.id) }}"
+                                                              method="post">
+                                                            <input type="hidden" name="next_url" value="/admin?tab=books">
+                                                            <input type="hidden" name="branch_id" value="{{ copy.branch_id }}">
+                                                        </form>
+                                                    </td>
+
+                                                    <td>
+                                                        <input form="copy-form-{{ copy.id }}"
+                                                               type="text"
+                                                               name="shelf_location"
+                                                               value="{{ copy.shelf_location or '' }}">
+                                                    </td>
+
+                                                    <td>
+                                                        <input form="copy-form-{{ copy.id }}"
+                                                               type="number"
+                                                               name="total_quantity"
+                                                               value="{{ copy.total_quantity or 0 }}"
+                                                               min="0">
+                                                    </td>
+
+                                                    <td>
+                                                        <input form="copy-form-{{ copy.id }}"
+                                                               type="number"
+                                                               name="available_quantity"
+                                                               value="{{ copy.available_quantity or 0 }}"
+                                                               min="0">
+                                                    </td>
+
+                                                    <td>
+                                                        <button form="copy-form-{{ copy.id }}"
+                                                                class="btn-primary"
+                                                                type="submit">
+                                                            Lưu
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        {% else %}
+                                            <tr>
+                                                <td colspan="5" class="empty-table">
+                                                    Sách này chưa có chi nhánh nào.
+                                                </td>
+                                            </tr>
+                                        {% endif %}
+                                    </tbody>
+                                </table>
+                            </td>
+                        </tr>
                     {% endfor %}
                 {% else %}
                     <tr>
-                        <td colspan="9" class="empty-table">
-                            {% if selected_category %}
-                                Không có sách nào trong danh mục này.
-                            {% else %}
-                                Chưa có sách nào trong hệ thống.
-                            {% endif %}
+                        <td colspan="10" class="empty-table">
+                            Chưa có sách nào trong hệ thống.
                         </td>
                     </tr>
                 {% endif %}
@@ -316,7 +509,6 @@
     <div class="book-list-summary">
         Hiển thị <strong>{{ books|length }}</strong> sách
     </div>
-
 </div>
 
 <script>
@@ -330,13 +522,33 @@ function toggleForm(id) {
     el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
 
-function toggleEditBook(bookId) {
-    const row = document.getElementById('edit-book-' + bookId);
+function toggleBranch(id) {
+    const el = document.getElementById('branch-' + id);
 
-    if (!row) {
+    if (!el) {
         return;
     }
 
-    row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+    el.style.display = el.style.display === 'none' ? 'table-row' : 'none';
+}
+
+function toggleEditBook(id) {
+    const el = document.getElementById('edit-book-' + id);
+
+    if (!el) {
+        return;
+    }
+
+    el.style.display = el.style.display === 'none' ? 'table-row' : 'none';
+}
+
+function toggleAddCopy(id) {
+    const el = document.getElementById('add-copy-' + id);
+
+    if (!el) {
+        return;
+    }
+
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
 </script>
