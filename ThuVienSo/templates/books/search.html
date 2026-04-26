@@ -17,7 +17,10 @@
             </a>
         </div>
 
-        <form method="GET" action="{{ url_for('book.search') }}">
+        <form method="GET"
+              action="{{ url_for('book.search') }}"
+              id="searchFilterForm"
+              data-reset-url="{{ url_for('book.search') }}">
 
             <!-- Từ khóa -->
             <div class="sidebar-search-box">
@@ -33,74 +36,78 @@
             </div>
 
             <!-- Thể loại -->
-            <div class="filter-group">
-                <div class="filter-title">
+            <div class="filter-group {% if searched and books %}open{% endif %}">
+                <button type="button" class="filter-toggle">
                     <span>Thể loại</span>
-                    <span>▾</span>
-                </div>
+                    <span class="filter-arrow">▾</span>
+                </button>
 
-                {% if categories %}
-                    {% for category in categories %}
-                        <label class="filter-item">
-                            <input type="checkbox"
-                                   name="category"
-                                   value="{{ category.id }}"
-                                   {% if category.id|string in selected_categories %}checked{% endif %}>
-                            {{ category.name }}
-                        </label>
-                    {% endfor %}
-                {% else %}
-                    <p class="filter-empty">Chưa có thể loại</p>
-                {% endif %}
+                <div class="filter-options">
+                    {% if categories %}
+                        {% for category in categories %}
+                            <label class="filter-item">
+                                <input type="checkbox"
+                                       name="category"
+                                       value="{{ category.id }}"
+                                       {% if category.id|string in selected_categories %}checked{% endif %}>
+                                <span>{{ category.name }}</span>
+                            </label>
+                        {% endfor %}
+                    {% else %}
+                        <p class="filter-empty">Không có thể loại phù hợp</p>
+                    {% endif %}
+                </div>
             </div>
 
             <!-- Nhà xuất bản -->
-            <div class="filter-group">
-                <div class="filter-title">
+            <div class="filter-group {% if searched and books %}open{% endif %}">
+                <button type="button" class="filter-toggle">
                     <span>Nhà xuất bản</span>
-                    <span>▾</span>
-                </div>
+                    <span class="filter-arrow">▾</span>
+                </button>
 
-                {% if publishers %}
-                    {% for publisher in publishers %}
-                        <label class="filter-item">
-                            <input type="checkbox"
-                                   name="publisher"
-                                   value="{{ publisher.id }}"
-                                   {% if publisher.id|string in selected_publishers %}checked{% endif %}>
-                            {{ publisher.name }}
-                        </label>
-                    {% endfor %}
-                {% else %}
-                    <p class="filter-empty">Chưa có nhà xuất bản</p>
-                {% endif %}
+                <div class="filter-options">
+                    {% if publishers %}
+                        {% for publisher in publishers %}
+                            <label class="filter-item">
+                                <input type="checkbox"
+                                       name="publisher"
+                                       value="{{ publisher.id }}"
+                                       {% if publisher.id|string in selected_publishers %}checked{% endif %}>
+                                <span>{{ publisher.name }}</span>
+                            </label>
+                        {% endfor %}
+                    {% else %}
+                        <p class="filter-empty">Không có nhà xuất bản phù hợp</p>
+                    {% endif %}
+                </div>
             </div>
 
             <!-- Tình trạng -->
-            <div class="filter-group">
-                <div class="filter-title">
+            <div class="filter-group {% if searched and books %}open{% endif %}">
+                <button type="button" class="filter-toggle">
                     <span>Tình trạng</span>
-                    <span>▾</span>
+                    <span class="filter-arrow">▾</span>
+                </button>
+
+                <div class="filter-options">
+                    {% if status_options %}
+                        {% for status in status_options %}
+                            <label class="filter-item">
+                                <input type="checkbox"
+                                       name="status"
+                                       value="{{ status.value }}"
+                                       {% if status.value in selected_statuses %}checked{% endif %}>
+                                <span>{{ status.label }}</span>
+                            </label>
+                        {% endfor %}
+                    {% else %}
+                        <p class="filter-empty">Không có tình trạng phù hợp</p>
+                    {% endif %}
                 </div>
-
-                <label class="filter-item">
-                    <input type="radio"
-                           name="status"
-                           value="available"
-                           {% if selected_status == 'available' %}checked{% endif %}>
-                    Còn sách
-                </label>
-
-                <label class="filter-item">
-                    <input type="radio"
-                           name="status"
-                           value="unavailable"
-                           {% if selected_status == 'unavailable' %}checked{% endif %}>
-                    Đã hết
-                </label>
             </div>
 
-            <button type="submit" class="apply-filter-btn">
+            <button type="submit" name="filter" value="1" class="apply-filter-btn">
                 Áp dụng bộ lọc
             </button>
         </form>
@@ -138,4 +145,5 @@
     </main>
 
 </div>
+<script src="{{ url_for('static', filename='js/search.js') }}"></script>
 {% endblock %}

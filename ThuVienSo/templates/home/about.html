@@ -1,0 +1,141 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Giới thiệu - Thư Viện Số{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/about.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<section class="about-hero">
+    <div class="about-hero-content">
+        <h1>Giới thiệu về Thư Viện Số</h1>
+        <p>
+            Nền tảng hỗ trợ tra cứu, quản lý và mượn sách trực tuyến một cách
+            nhanh chóng, tiện lợi và hiện đại.
+        </p>
+    </div>
+</section>
+
+<section class="about-section">
+    <div class="about-container">
+
+        <div class="about-card">
+            <h2>Thư Viện Số là gì?</h2>
+            <p>
+                <strong>Thư Viện Số</strong> là hệ thống quản lý thư viện trực tuyến
+                được xây dựng nhằm hỗ trợ người dùng tìm kiếm, xem thông tin và đăng ký
+                mượn sách một cách dễ dàng. Thay vì phải tra cứu thủ công hoặc đến trực tiếp
+                thư viện để kiểm tra tình trạng sách, người dùng có thể thực hiện các thao tác
+                này ngay trên website.
+            </p>
+
+            <p>
+                Hệ thống giúp quá trình quản lý thư viện trở nên khoa học hơn, giảm bớt thao tác
+                thủ công cho thủ thư, đồng thời giúp độc giả tiếp cận nguồn tài liệu nhanh chóng
+                mọi lúc, mọi nơi.
+            </p>
+        </div>
+
+        <div class="about-grid">
+            <div class="about-feature">
+                <div class="feature-icon">🔍</div>
+                <h3>Tìm kiếm sách</h3>
+                <p>
+                    Người dùng có thể tìm kiếm sách theo tên sách, tác giả, thể loại,
+                    nhà xuất bản hoặc từ khóa liên quan.
+                </p>
+            </div>
+
+            <div class="about-feature">
+                <div class="feature-icon">📖</div>
+                <h3>Xem thông tin sách</h3>
+                <p>
+                    Hệ thống hiển thị thông tin chi tiết của từng quyển sách như tên sách,
+                    tác giả, mô tả, thể loại, nhà xuất bản, năm xuất bản và tình trạng còn sách.
+                </p>
+            </div>
+
+            <div class="about-feature">
+                <div class="feature-icon">📝</div>
+                <h3>Đăng ký mượn sách</h3>
+                <p>
+                    Độc giả có thể gửi yêu cầu mượn sách trực tuyến và theo dõi quá trình
+                    xử lý yêu cầu mượn sách của mình.
+                </p>
+            </div>
+
+            <div class="about-feature">
+                <div class="feature-icon">👨‍💼</div>
+                <h3>Quản lý thư viện</h3>
+                <p>
+                    Thủ thư và quản trị viên có thể quản lý sách, tài khoản người dùng,
+                    thể loại, yêu cầu mượn sách và lịch sử mượn trả.
+                </p>
+            </div>
+        </div>
+
+        <div class="about-card">
+            <h2>Mục tiêu của hệ thống</h2>
+            <p>
+                Mục tiêu của website <strong>Thư Viện Số</strong> là xây dựng một môi trường
+                thư viện hiện đại, thân thiện và dễ sử dụng. Hệ thống giúp độc giả tiết kiệm
+                thời gian tra cứu tài liệu, đồng thời hỗ trợ nhân viên thư viện quản lý dữ liệu
+                chính xác và hiệu quả hơn.
+            </p>
+
+            <p>
+                Bên cạnh các chức năng cơ bản, hệ thống còn hướng đến việc phát triển thêm
+                các tính năng nâng cao như gợi ý sách theo lịch sử mượn, tìm kiếm nâng cao,
+                thống kê số lượng sách và dự đoán nhu cầu mượn sách trong tương lai.
+            </p>
+        </div>
+
+        <div class="about-card">
+            <h2>Đối tượng sử dụng</h2>
+
+            <div class="role-list">
+                <div class="role-item">
+                    <h4>Độc giả</h4>
+                    <p>
+                        Có thể tìm kiếm sách, xem chi tiết sách, đăng ký mượn sách
+                        và theo dõi lịch sử mượn của bản thân.
+                    </p>
+                </div>
+
+                <div class="role-item">
+                    <h4>Thủ thư</h4>
+                    <p>
+                        Có thể quản lý thông tin sách, xử lý yêu cầu mượn sách,
+                        cập nhật số lượng sách và theo dõi hoạt động mượn trả.
+                    </p>
+                </div>
+
+                <div class="role-item">
+                    <h4>Quản trị viên</h4>
+                    <p>
+                        Có thể quản lý tài khoản người dùng, phân quyền, quản lý dữ liệu
+                        và theo dõi toàn bộ hoạt động của hệ thống.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="about-card">
+            <h2>Lợi ích của Thư Viện Số</h2>
+
+            <ul class="benefit-list">
+                <li>Giúp người dùng tìm kiếm và tiếp cận sách nhanh chóng hơn.</li>
+                <li>Hỗ trợ kiểm tra tình trạng còn sách trước khi đăng ký mượn.</li>
+                <li>Giảm thao tác quản lý thủ công cho thủ thư.</li>
+                <li>Dễ dàng quản lý thông tin sách, thể loại, tác giả và nhà xuất bản.</li>
+                <li>Hỗ trợ theo dõi lịch sử mượn sách và quá trình xử lý yêu cầu mượn.</li>
+                <li>Nâng cao hiệu quả hoạt động của thư viện trong môi trường số.</li>
+            </ul>
+        </div>
+
+    </div>
+</section>
+
+{% endblock %}

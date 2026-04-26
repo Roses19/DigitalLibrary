@@ -8,3 +8,8 @@ home_bp = Blueprint("home", __name__)
 def index():
     books = get_home_books()
     return render_template("home/index.html", books=books)
+
+
+@home_bp.route("/about")
+def about():
+    return render_template("home/about.html")

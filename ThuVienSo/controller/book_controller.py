@@ -11,7 +11,6 @@ def get_home_books():
     return Book.query.order_by(Book.created_at.desc()).limit(4).all()
 
 
-
 # ================== CATEGORY ==================
 def get_categories():
     categories = Category.query.all()
@@ -89,11 +88,109 @@ def delete_category(category_id):
 
 
 # ================== SEARCH ==================
-def build_book_query(keyword="", category_ids=None, publisher_ids=None, status=""):
+def to_int_list(values):
+    result = []
+
+    for value in values:
+        try:
+            result.append(int(value))
+        except (TypeError, ValueError):
+            pass
+
+    return result
+
+
+def get_book_status_value(book):
+    """
+    Tình trạng sách được tự suy ra từ available_quantity.
+    available_quantity > 0  => available
+    available_quantity <= 0 => unavailable
+    """
+    available_quantity = getattr(book, "available_quantity", 0) or 0
+
+    if available_quantity > 0:
+        return "available"
+
+    return "unavailable"
+
+
+def get_status_label(status_value):
+    if status_value == "available":
+        return "Còn sách"
+
+    if status_value == "unavailable":
+        return "Đã hết"
+
+    return status_value
+
+
+def get_status_options_from_books(books):
+    """
+    Tự đọc tình trạng từ danh sách sách đang có.
+    Nếu kết quả chỉ có sách còn hàng thì chỉ hiện 'Còn sách'.
+    Nếu kết quả chỉ có sách hết hàng thì chỉ hiện 'Đã hết'.
+    """
+    seen = set()
+    status_options = []
+
+    for book in books:
+        status_value = get_book_status_value(book)
+
+        if status_value not in seen:
+            seen.add(status_value)
+            status_options.append({
+                "value": status_value,
+                "label": get_status_label(status_value)
+            })
+
+    status_options.sort(
+        key=lambda item: 0 if item["value"] == "available" else 1
+    )
+
+    return status_options
+
+
+def get_filter_options_from_books(books):
+    """
+    Khi tìm ra sách, sidebar chỉ hiện:
+    - Thể loại thuộc các sách đó
+    - Nhà xuất bản thuộc các sách đó
+    - Tình trạng thuộc các sách đó
+    """
+    category_ids = []
+    publisher_ids = []
+
+    for book in books:
+        if book.category_id and book.category_id not in category_ids:
+            category_ids.append(book.category_id)
+
+        if book.publisher_id and book.publisher_id not in publisher_ids:
+            publisher_ids.append(book.publisher_id)
+
+    categories = []
+    publishers = []
+
+    if category_ids:
+        categories = Category.query.filter(
+            Category.id.in_(category_ids)
+        ).order_by(Category.name.asc()).all()
+
+    if publisher_ids:
+        publishers = Publisher.query.filter(
+            Publisher.id.in_(publisher_ids)
+        ).order_by(Publisher.name.asc()).all()
+
+    status_options = get_status_options_from_books(books)
+
+    return categories, publishers, status_options
+
+
+def build_book_query(keyword="", category_ids=None, publisher_ids=None, statuses=None):
     query = Book.query
 
-    category_ids = category_ids or []
-    publisher_ids = publisher_ids or []
+    category_ids = to_int_list(category_ids or [])
+    publisher_ids = to_int_list(publisher_ids or [])
+    statuses = statuses or []
 
     if keyword:
         query = query.outerjoin(Book.authors).filter(
@@ -110,11 +207,12 @@ def build_book_query(keyword="", category_ids=None, publisher_ids=None, status="
     if publisher_ids:
         query = query.filter(Book.publisher_id.in_(publisher_ids))
 
-    if status == "available":
-        query = query.filter(Book.available_quantity > 0)
+    if statuses:
+        if "available" in statuses and "unavailable" not in statuses:
+            query = query.filter(Book.available_quantity > 0)
 
-    elif status == "unavailable":
-        query = query.filter(Book.available_quantity <= 0)
+        elif "unavailable" in statuses and "available" not in statuses:
+            query = query.filter(Book.available_quantity <= 0)
 
     return query.distinct()
 
@@ -124,22 +222,55 @@ def search_books():
 
     selected_categories = request.args.getlist("category")
     selected_publishers = request.args.getlist("publisher")
-    selected_status = request.args.get("status", "").strip()
+    selected_statuses = request.args.getlist("status")
 
-    categories = Category.query.order_by(Category.name.asc()).all()
-    publishers = Publisher.query.order_by(Publisher.name.asc()).all()
+    # Chỉ khi bấm nút "Áp dụng bộ lọc" mới có filter=1
+    filter_applied = request.args.get("filter") == "1"
 
     searched = bool(
-        keyword or selected_categories or selected_publishers or selected_status
+        keyword or selected_categories or selected_publishers or selected_statuses
     )
 
-    if searched:
-        books = build_book_query(
-            keyword=keyword,
-            category_ids=selected_categories,
-            publisher_ids=selected_publishers,
-            status=selected_status
+    # Tìm sách theo keyword trước
+    if keyword:
+        matched_books = build_book_query(
+            keyword=keyword
         ).order_by(Book.created_at.desc()).all()
+    else:
+        matched_books = []
+
+    # Nếu có keyword, filter sidebar chỉ lấy thông tin của sách tìm được
+    if keyword:
+        categories, publishers, status_options = get_filter_options_from_books(matched_books)
+
+        # Lần đầu tìm kiếm:
+        # Tự tick thể loại, NXB, tình trạng theo sách trả về
+        if not filter_applied:
+            selected_categories = [str(category.id) for category in categories]
+            selected_publishers = [str(publisher.id) for publisher in publishers]
+            selected_statuses = [status["value"] for status in status_options]
+
+    # Nếu không có keyword, hiện full filter
+    else:
+        categories = Category.query.order_by(Category.name.asc()).all()
+        publishers = Publisher.query.order_by(Publisher.name.asc()).all()
+
+        all_books = Book.query.all()
+        status_options = get_status_options_from_books(all_books)
+
+    # Danh sách sách hiển thị
+    if searched:
+        if keyword and not filter_applied:
+            # Lần đầu search keyword thì hiển thị kết quả keyword
+            books = matched_books
+        else:
+            # Khi bấm áp dụng bộ lọc
+            books = build_book_query(
+                keyword=keyword,
+                category_ids=selected_categories,
+                publisher_ids=selected_publishers,
+                statuses=selected_statuses
+            ).order_by(Book.created_at.desc()).all()
     else:
         books = []
 
@@ -150,9 +281,10 @@ def search_books():
         searched=searched,
         categories=categories,
         publishers=publishers,
+        status_options=status_options,
         selected_categories=selected_categories,
         selected_publishers=selected_publishers,
-        selected_status=selected_status
+        selected_statuses=selected_statuses
     )
 
 
@@ -161,9 +293,6 @@ def advanced_search_controller():
     keyword = request.args.get("q", "").strip()
     publisher_id = request.args.get("publisher_id", "").strip()
     category_id = request.args.get("category_id", "").strip()
-
-    categories = Category.query.order_by(Category.name.asc()).all()
-    publishers = Publisher.query.order_by(Publisher.name.asc()).all()
 
     query = Book.query
 
@@ -184,14 +313,28 @@ def advanced_search_controller():
 
     books = query.distinct().order_by(Book.created_at.desc()).all()
 
+    if keyword:
+        categories, publishers, status_options = get_filter_options_from_books(books)
+    else:
+        categories = Category.query.order_by(Category.name.asc()).all()
+        publishers = Publisher.query.order_by(Publisher.name.asc()).all()
+        status_options = get_status_options_from_books(Book.query.all())
+
+    selected_categories = [category_id] if category_id else []
+    selected_publishers = [publisher_id] if publisher_id else []
+    selected_statuses = [status["value"] for status in status_options] if keyword else []
+
     return render_template(
         "books/search.html",
         books=books,
+        keyword=keyword,
+        searched=True,
         categories=categories,
         publishers=publishers,
-        keyword=keyword,
-        publisher_id=publisher_id,
-        category_id=category_id
+        status_options=status_options,
+        selected_categories=selected_categories,
+        selected_publishers=selected_publishers,
+        selected_statuses=selected_statuses
     )
 
 
@@ -203,6 +346,7 @@ def get_book_detail(book_id):
         return render_template("books/detail.html", book=None)
 
     return render_template("books/detail.html", book=book)
+
 
 # ================== BOOK LIST ==================
 def get_book_list():
@@ -270,10 +414,8 @@ def update_book(book_id):
     book.category_id = int(category_id) if category_id else None
     book.publisher_id = int(publisher_id) if publisher_id else None
 
-    # cập nhật số lượng
     book.quantity = int(quantity)
 
-    # optional: sync available
     if book.available_quantity > book.quantity:
         book.available_quantity = book.quantity
 
