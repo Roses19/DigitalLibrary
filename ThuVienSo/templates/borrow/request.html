@@ -1,0 +1,96 @@
+{% extends "layout/base.html" %}
+
+{% block title %}
+    {{ page_title }} - Thư Viện Số
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/borrow.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="borrow-page">
+    <div class="borrow-header">
+        <h1>{{ page_title }}</h1>
+
+        {% if edit_mode %}
+            <p>Chỉnh sửa thông tin yêu cầu mượn sách khi yêu cầu còn đang chờ duyệt.</p>
+        {% else %}
+            <p>Kiểm tra thông tin sách và gửi yêu cầu mượn đến thủ thư.</p>
+        {% endif %}
+    </div>
+
+    <div class="borrow-request-card">
+        <div class="borrow-request-cover">
+            {% if book.cover_image %}
+                <img src="{{ book.cover_image }}" alt="{{ book.title }}">
+            {% else %}
+                <img src="{{ url_for('static', filename='images/books/default-book.png') }}" alt="{{ book.title }}">
+            {% endif %}
+        </div>
+
+        <div class="borrow-request-info">
+            <h2>{{ book.title }}</h2>
+
+            <p class="borrow-request-author">
+                {% if book.authors %}
+                    {{ book.authors | map(attribute='name') | join(', ') }}
+                {% else %}
+                    Chưa rõ tác giả
+                {% endif %}
+            </p>
+
+            <div class="borrow-request-meta">
+                <p><strong>ISBN:</strong> {{ book.isbn or "Chưa có" }}</p>
+                <p><strong>Nhà xuất bản:</strong> {{ book.publisher.name if book.publisher else "Chưa có" }}</p>
+                <p><strong>Thể loại:</strong> {{ book.category.name if book.category else "Chưa có" }}</p>
+                <p><strong>Số lượng còn:</strong> {{ available_quantity }}</p>
+
+                {% if edit_mode %}
+                    <p><strong>Trạng thái:</strong> Chờ duyệt</p>
+                {% endif %}
+            </div>
+
+            <form method="POST"
+                  action="{{ form_action }}"
+                  class="borrow-request-form">
+
+                <div class="form-group">
+                    <label for="quantity">Số lượng muốn mượn</label>
+                    <input type="number"
+                           id="quantity"
+                           name="quantity"
+                           min="1"
+                           max="{{ available_quantity }}"
+                           value="{{ quantity }}"
+                           required>
+                </div>
+
+                <div class="form-group">
+                    <label for="note">Ghi chú</label>
+                    <textarea id="note"
+                              name="note"
+                              rows="4"
+                              placeholder="Ví dụ: Em cần mượn sách để học trong tuần này...">{{ note }}</textarea>
+                </div>
+
+                <div class="borrow-request-actions">
+                    {% if edit_mode %}
+                        <a href="{{ url_for('borrow.history') }}" class="btn-cancel">
+                            Quay lại lịch sử
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('book.detail', book_id=book.id) }}" class="btn-cancel">
+                            Quay lại
+                        </a>
+                    {% endif %}
+
+                    <button type="submit" class="btn-submit-borrow">
+                        {{ submit_text }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

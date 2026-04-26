@@ -1,123 +1,554 @@
 /* =====================
-   BORROW HISTORY PAGE
+   BORROW PAGE
    ===================== */
 
-.borrow-history-page {
-    max-width: 1150px;
+.borrow-page {
+    max-width: 1200px;
     margin: 40px auto;
-    padding: 0 20px;
+    padding: 0 32px;
+    min-height: calc(100vh - 180px);
 }
 
-.borrow-history-header {
-    margin-bottom: 24px;
+.borrow-header {
+    margin-bottom: 32px;
 }
 
-.borrow-history-header h1 {
+.borrow-header h1 {
+    font-size: 42px;
+    font-weight: 800;
     color: #123b5d;
-    font-size: 32px;
-    margin-bottom: 6px;
+    margin: 0 0 10px;
 }
 
-.borrow-history-header p {
-    color: #6b7280;
+.borrow-header p {
+    font-size: 18px;
+    color: #555;
+    margin: 0;
 }
 
-.borrow-history-card {
+.borrow-section-title {
+    font-size: 28px;
+    font-weight: 800;
+    color: #123b5d;
+    margin: 34px 0 18px;
+    padding-left: 14px;
+    border-left: 5px solid #e97732;
+}
+
+/* =====================
+   TABLE
+   ===================== */
+
+.borrow-table-wrapper {
     background: #ffffff;
-    border-radius: 14px;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.08);
-    overflow: hidden;
+    border-radius: 16px;
+    overflow-x: auto;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    margin-bottom: 30px;
 }
 
-.borrow-history-table {
+.borrow-table {
     width: 100%;
     border-collapse: collapse;
+    min-width: 850px;
 }
 
-.borrow-history-table thead {
-    background: #173f63;
-    color: white;
+.borrow-table thead {
+    background: #17466d;
 }
 
-.borrow-history-table th,
-.borrow-history-table td {
-    padding: 14px 16px;
-    border-bottom: 1px solid #e5e7eb;
-    text-align: left;
-    font-size: 14px;
-    vertical-align: middle;
-}
-
-.borrow-history-table tbody tr:hover {
-    background: #f8fafc;
-}
-
-.borrow-book-cell {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    min-width: 260px;
-}
-
-.borrow-book-cell img {
-    width: 48px;
-    height: 66px;
-    object-fit: cover;
-    border-radius: 6px;
-    background: #f3f4f6;
-}
-
-.borrow-book-cell strong {
-    display: block;
-    color: #123b5d;
-    margin-bottom: 4px;
-}
-
-.borrow-book-cell a {
-    color: #2563eb;
-    text-decoration: none;
-    font-size: 13px;
-}
-
-.borrow-book-cell a:hover {
-    text-decoration: underline;
-}
-
-.borrow-status,
-.item-status {
-    display: inline-block;
-    padding: 5px 10px;
-    border-radius: 999px;
-    font-size: 13px;
+.borrow-table th {
+    padding: 16px;
+    color: #ffffff;
+    font-size: 15px;
     font-weight: 700;
+    text-align: left;
     white-space: nowrap;
 }
 
-.borrow-status.borrowing,
-.item-status.borrowing {
+.borrow-table td {
+    padding: 16px;
+    border-bottom: 1px solid #e5e7eb;
+    color: #333;
+    font-size: 15px;
+    vertical-align: middle;
+}
+
+.borrow-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+.borrow-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* =====================
+   BOOK INFO
+   ===================== */
+
+.borrow-book-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.borrow-book-info strong {
+    color: #123b5d;
+    font-size: 16px;
+}
+
+.borrow-book-info span {
+    color: #666;
+    font-size: 14px;
+}
+
+/* =====================
+   STATUS BADGE
+   ===================== */
+
+.borrow-status {
+    display: inline-block;
+    padding: 7px 13px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.borrow-status.pending {
+    background: #fff3cd;
+    color: #9a6500;
+}
+
+.borrow-status.approved {
     background: #dbeafe;
     color: #1d4ed8;
 }
 
-.borrow-status.returned,
-.item-status.returned {
-    background: #dcfce7;
-    color: #166534;
-}
-
-.borrow-status.overdue {
+.borrow-status.rejected {
     background: #fee2e2;
-    color: #991b1b;
+    color: #b91c1c;
 }
 
-.borrow-status.pending {
-    background: #fef3c7;
-    color: #92400e;
+.borrow-status.returned {
+    background: #dcfce7;
+    color: #15803d;
 }
 
-.empty-history {
+.borrow-status.borrowing {
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
+/* =====================
+   EMPTY BOX
+   ===================== */
+
+.borrow-empty {
+    background: #ffffff;
+    padding: 34px;
+    border-radius: 16px;
     text-align: center;
-    padding: 35px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    margin-bottom: 30px;
+}
+
+.borrow-empty p {
+    margin: 0;
+    font-size: 17px;
+    color: #555;
+}
+
+/* =====================
+   ADMIN FILTER
+   ===================== */
+
+.borrow-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.borrow-filter a {
+    padding: 9px 16px;
+    border-radius: 999px;
+    background: #eef3f8;
+    color: #17466d;
+    text-decoration: none;
+    font-weight: 700;
+    transition: 0.2s ease;
+}
+
+.borrow-filter a.active,
+.borrow-filter a:hover {
+    background: #17466d;
+    color: #ffffff;
+}
+
+/* =====================
+   ACTION BUTTONS
+   ===================== */
+
+.borrow-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.borrow-actions form {
+    margin: 0;
+}
+
+.btn-approve,
+.btn-reject,
+.btn-return,
+.btn-borrow-main,
+.btn-edit,
+.btn-delete {
+    border: none;
+    padding: 8px 13px;
+    border-radius: 8px;
+    color: #ffffff;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 14px;
+}
+
+.btn-approve {
+    background: #16a34a;
+}
+
+.btn-reject,
+.btn-delete {
+    background: #dc2626;
+}
+
+.btn-return,
+.btn-borrow-main {
+    background: #17466d;
+}
+
+.btn-edit {
+    background: #2563eb;
+}
+
+.btn-approve:hover,
+.btn-reject:hover,
+.btn-return:hover,
+.btn-borrow-main:hover,
+.btn-edit:hover,
+.btn-delete:hover {
+    opacity: 0.9;
+    color: #ffffff;
+}
+
+.no-action {
     color: #777;
     font-style: italic;
+}
+
+/* =====================
+   BORROW REQUEST FORM
+   ===================== */
+
+.borrow-request-card {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 32px;
+    background: #ffffff;
+    border-radius: 18px;
+    padding: 28px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.borrow-request-cover img {
+    width: 100%;
+    height: 390px;
+    object-fit: cover;
+    border-radius: 14px;
+    background: #f3f4f6;
+}
+
+.borrow-request-info h2 {
+    font-size: 32px;
+    color: #123b5d;
+    margin: 0 0 8px;
+}
+
+.borrow-request-author {
+    color: #555;
+    font-size: 17px;
+    margin-bottom: 22px;
+}
+
+.borrow-request-meta {
+    background: #f8fafc;
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 22px;
+}
+
+.borrow-request-meta p {
+    margin: 8px 0;
+    color: #333;
+    font-size: 16px;
+}
+
+.borrow-request-form .form-group {
+    margin-bottom: 18px;
+}
+
+.borrow-request-form label {
+    display: block;
+    font-weight: 800;
+    color: #123b5d;
+    margin-bottom: 8px;
+}
+
+.borrow-request-form input,
+.borrow-request-form textarea {
+    width: 100%;
+    border: 1px solid #cfd8e3;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 16px;
+    outline: none;
+}
+
+.borrow-request-form input:focus,
+.borrow-request-form textarea:focus {
+    border-color: #17466d;
+    box-shadow: 0 0 0 3px rgba(23, 70, 109, 0.12);
+}
+
+.borrow-request-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 22px;
+}
+
+.btn-cancel,
+.btn-submit-borrow {
+    border: none;
+    border-radius: 10px;
+    padding: 12px 18px;
+    font-weight: 800;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.btn-cancel {
+    background: #e5e7eb;
+    color: #333;
+}
+
+.btn-submit-borrow {
+    background: #e97732;
+    color: #ffffff;
+}
+
+.btn-cancel:hover {
+    background: #d1d5db;
+    color: #333;
+}
+
+.btn-submit-borrow:hover {
+    opacity: 0.9;
+    color: #ffffff;
+}
+
+/* =====================
+   CUSTOM CONFIRM MODAL
+   ===================== */
+
+.custom-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 20px;
+}
+
+.custom-modal-overlay.show {
+    display: flex;
+}
+
+.custom-modal {
+    width: 100%;
+    max-width: 430px;
+    background: #ffffff;
+    border-radius: 18px;
+    padding: 28px;
+    text-align: center;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
+    animation: modalFadeIn 0.18s ease;
+}
+
+.custom-modal-icon {
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    background: #fee2e2;
+    color: #dc2626;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    font-weight: 900;
+    margin: 0 auto 16px;
+}
+
+.custom-modal h3 {
+    color: #123b5d;
+    font-size: 24px;
+    margin: 0 0 10px;
+}
+
+.custom-modal p {
+    color: #555;
+    font-size: 16px;
+    line-height: 1.5;
+    margin: 0 0 24px;
+}
+
+.custom-modal-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+}
+
+.btn-modal-cancel,
+.btn-modal-confirm {
+    border: none;
+    border-radius: 10px;
+    padding: 11px 18px;
+    font-weight: 800;
+    cursor: pointer;
+    font-size: 15px;
+}
+
+.btn-modal-cancel {
+    background: #e5e7eb;
+    color: #333333;
+}
+
+.btn-modal-confirm {
+    background: #dc2626;
+    color: #ffffff;
+}
+
+.btn-modal-cancel:hover {
+    background: #d1d5db;
+}
+
+.btn-modal-confirm:hover {
+    opacity: 0.9;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* =====================
+   RESPONSIVE
+   ===================== */
+
+@media (max-width: 768px) {
+    .borrow-page {
+        padding: 0 18px;
+        margin: 28px auto;
+    }
+
+    .borrow-header h1 {
+        font-size: 32px;
+    }
+
+    .borrow-section-title {
+        font-size: 24px;
+    }
+
+    .borrow-request-card {
+        grid-template-columns: 1fr;
+    }
+
+    .borrow-request-cover img {
+        max-width: 280px;
+        height: auto;
+    }
+
+    .borrow-request-actions {
+        justify-content: stretch;
+        flex-direction: column;
+    }
+
+    .btn-cancel,
+    .btn-submit-borrow {
+        text-align: center;
+        width: 100%;
+    }
+
+    .custom-modal-actions {
+        flex-direction: column-reverse;
+    }
+
+    .btn-modal-cancel,
+    .btn-modal-confirm {
+        width: 100%;
+    }
+}
+/* =====================
+   ADMIN REJECT MODAL FORM
+   ===================== */
+
+.modal-form-group {
+    margin-bottom: 18px;
+}
+
+.modal-form-group textarea {
+    width: 100%;
+    border: 1px solid #cfd8e3;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 15px;
+    outline: none;
+    resize: vertical;
+    font-family: inherit;
+}
+
+.modal-form-group textarea:focus {
+    border-color: #17466d;
+    box-shadow: 0 0 0 3px rgba(23, 70, 109, 0.12);
+}
+.borrow-filter button {
+    border: none;
+    padding: 9px 16px;
+    border-radius: 999px;
+    background: #eef3f8;
+    color: #17466d;
+    text-decoration: none;
+    font-weight: 700;
+    transition: 0.2s ease;
+    cursor: pointer;
+    font: inherit;
+}
+
+.borrow-filter button.active,
+.borrow-filter button:hover {
+    background: #17466d;
+    color: #ffffff;
 }

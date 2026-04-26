@@ -48,7 +48,7 @@
                 {% set role_name = (current_user.role.name if current_user.role else '')|lower %}
 
                 {% if role_name in ['admin', 'quản trị', 'quản trị viên', 'thủ thư', 'librarian'] %}
-                    <a href="{{ url_for('admin_bp.admin_dashboard') }}">Quản lý</a>
+                    <a href="{{ url_for('admin_bp.dashboard') }}">Quản lý</a>
                 {% endif %}
 
             {% else %}

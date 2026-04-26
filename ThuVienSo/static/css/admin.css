@@ -44,11 +44,7 @@
 }
 
 /* ===== CONTENT ===== */
-.admin-content {
-    flex: 1;
-    padding: 20px;
-    background: #f5f7fa;
-}
+
 
 /* SECTION */
 .section {
@@ -247,7 +243,7 @@
 /* ===== CONTENT ===== */
 .admin-content {
     flex: 1;
-    padding: 20px;
+    padding: 5px;
     background: #f5f7fa;
 }
 
@@ -514,4 +510,148 @@
     .users-table-wrap {
         overflow-x: auto;
     }
+}
+/* =========================
+   ADMIN LAYOUT + SIDEBAR FIX
+   ========================= */
+
+.admin-layout {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    min-height: calc(100vh - 80px);
+    background: #f3f6fa;
+}
+
+.admin-sidebar {
+    width: 260px;
+    min-width: 260px;
+    background: #17466d;
+    padding: 22px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.admin-sidebar-link {
+    width: 100%;
+    min-height: 56px;
+    border: 1px solid rgba(255, 255, 255, 0.75);
+    background: transparent;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 8px;
+    font-size: 17px;
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+    transition: 0.2s ease;
+    font-family: inherit;
+}
+
+.admin-sidebar-link:hover {
+    background: rgba(255, 255, 255, 0.14);
+}
+
+.admin-sidebar-link.active {
+    background: #ffffff;
+    color: #123b5d;
+}
+
+.admin-sidebar-link.active:hover {
+    background: #ffffff;
+    color: #123b5d;
+}
+
+.sidebar-icon {
+    width: 24px;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.admin-content {
+    flex: 1;
+    padding: 20px 30px;
+    overflow-x: auto;
+}
+
+.section {
+    width: 100%;
+}
+
+.users-page,
+.borrow-page {
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+/* tránh bảng user bị quá sát sidebar */
+.users-table-wrap,
+.borrow-table-wrapper {
+    width: 100%;
+}
+
+/* responsive */
+@media (max-width: 900px) {
+    .admin-layout {
+        flex-direction: column;
+    }
+
+    .admin-sidebar {
+        width: 100%;
+        min-width: 100%;
+        flex-direction: row;
+        overflow-x: auto;
+        padding: 12px;
+    }
+
+    .admin-sidebar-link {
+        width: auto;
+        min-width: 180px;
+        white-space: nowrap;
+    }
+
+    .admin-content {
+        padding: 30px 20px;
+    }
+}
+/* =========================
+   ADMIN CONTENT SPACING FIX
+   ========================= */
+
+.admin-content {
+    flex: 1;
+    padding: 24px 17px 24px 17px !important;
+    overflow-x: auto;
+}
+
+.admin-content .book-list-page,
+.admin-content .users-page,
+.admin-content .borrow-page {
+    width: 100%;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.admin-content .admin-list-header,
+.admin-content .users-header,
+.admin-content .borrow-header {
+    width: 100%;
+}
+
+.admin-content .book-table-wrap,
+.admin-content .users-table-wrap,
+.admin-content .borrow-table-wrapper {
+    width: 100%;
+}
+
+/* Cho bảng sách rộng hơn trong vùng bên phải sidebar */
+.admin-content .book-table {
+    min-width: 1120px;
 }

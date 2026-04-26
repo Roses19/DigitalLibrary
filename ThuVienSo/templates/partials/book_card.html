@@ -1,13 +1,19 @@
+{% set borrow_state = user_borrow_states.get(book.id) if user_borrow_states is defined and user_borrow_states else None %}
+
 <div class="book-card">
     <div class="book-cover-wrapper">
         {% if book.cover_image %}
-            <img src="{{ book.cover_image }}" alt="{{ book.title }}" class="book-card-cover">
+            <img src="{{ book.cover_image }}"
+                 alt="{{ book.title }}"
+                 class="book-card-cover">
         {% else %}
-            <img src="{{ url_for('static', filename='images/books/default-book.png') }}" alt="{{ book.title }}" class="book-card-cover">
+            <img src="{{ url_for('static', filename='images/books/default-book.png') }}"
+                 alt="{{ book.title }}"
+                 class="book-card-cover">
         {% endif %}
 
-        <span class="book-status-badge {% if book.available_quantity > 0 %}available{% else %}unavailable{% endif %}">
-            {% if book.available_quantity > 0 %}
+        <span class="book-status-badge {% if book.available_quantity and book.available_quantity > 0 %}available{% else %}unavailable{% endif %}">
+            {% if book.available_quantity and book.available_quantity > 0 %}
                 Còn sách
             {% else %}
                 Đã hết
@@ -19,7 +25,11 @@
         <h3 class="book-card-title">{{ book.title }}</h3>
 
         <p class="book-card-author">
-            {{ book.authors | map(attribute='name') | join(', ') }}
+            {% if book.authors %}
+                {{ book.authors | map(attribute='name') | join(', ') }}
+            {% else %}
+                Chưa rõ tác giả
+            {% endif %}
         </p>
 
         <div class="book-card-actions">
@@ -27,9 +37,29 @@
                 Xem chi tiết
             </a>
 
-            <a href=#" class="btn-borrow">
-                Mượn sách
-            </a>
+            {% if not book.available_quantity or book.available_quantity <= 0 %}
+                <button type="button" class="btn-borrow disabled" disabled>
+                    Hết sách
+                </button>
+
+            {% elif borrow_state and borrow_state.status == "pending" %}
+                <a href="{{ url_for('borrow.edit_form', borrow_id=borrow_state.request_id) }}"
+                   class="btn-borrow">
+                    Sửa phiếu
+                </a>
+
+            {% elif borrow_state and borrow_state.status == "approved" %}
+                <a href="{{ url_for('borrow.borrow_form', book_id=book.id) }}"
+                   class="btn-borrow">
+                    Mượn lại
+                </a>
+
+            {% else %}
+                <a href="{{ url_for('borrow.borrow_form', book_id=book.id) }}"
+                   class="btn-borrow">
+                    Mượn sách
+                </a>
+            {% endif %}
         </div>
     </div>
 </div>

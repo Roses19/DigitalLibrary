@@ -25,8 +25,8 @@
                 <h1>{{ book.title }}</h1>
 
                 <div class="book-detail-actions">
-
-                    <a href="#" class="detail-tab borrow">
+                     <a href="{{ url_for('borrow.borrow_form', book_id=book.id) }}"
+                       class="btn-borrow">
                         Mượn sách
                     </a>
                 </div>

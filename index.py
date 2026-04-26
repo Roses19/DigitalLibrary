@@ -6,6 +6,8 @@ from ThuVienSo.routes.auth_routes import auth
 from ThuVienSo.routes.borrow_routes import borrow_bp
 from ThuVienSo.routes.admin_routes import admin_bp
 from ThuVienSo.routes.user_routes import user_bp
+
+from ThuVienSo.controller.borrow_controller import get_user_borrow_state_for_book
 app = Flask(
     __name__,
     template_folder="ThuVienSo/templates",
@@ -20,6 +22,13 @@ app.register_blueprint(auth)
 app.register_blueprint(borrow_bp)
 app.register_blueprint(admin_bp)
 app.register_blueprint(user_bp)
+
+@app.context_processor
+def inject_borrow_helpers():
+    return {
+        "get_user_borrow_state_for_book": get_user_borrow_state_for_book
+    }
+app.jinja_env.globals["get_user_borrow_state_for_book"] = get_user_borrow_state_for_book
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)

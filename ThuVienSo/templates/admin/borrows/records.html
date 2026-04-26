@@ -1,0 +1,102 @@
+{% block content %}
+<div class="borrow-page">
+    <div class="borrow-header">
+        <h1>Phiếu mượn sách</h1>
+        <p>Quản lý phiếu mượn đã được duyệt và xác nhận trả sách.</p>
+    </div>
+
+    <div class="borrow-filter">
+        <button type="button"
+                onclick="window.location.href='/admin?tab=borrow'">
+            Yêu cầu mượn
+        </button>
+
+        <button type="button"
+                class="active"
+                onclick="window.location.href='/admin?tab=borrow&view=records'">
+            Phiếu mượn
+        </button>
+    </div>
+
+    {% if borrow_records %}
+        <div class="borrow-table-wrapper">
+            <table class="borrow-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Độc giả</th>
+                        <th>Sách mượn</th>
+                        <th>Ngày mượn</th>
+                        <th>Hạn trả</th>
+                        <th>Trạng thái</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for record in borrow_records %}
+                        <tr>
+                            <td>#{{ record.id }}</td>
+
+                            <td>
+                                <strong>{{ record.user.username if record.user else "Không rõ" }}</strong>
+                            </td>
+
+                            <td>
+                                {% if record.items %}
+                                    {% for item in record.items %}
+                                        <div class="borrow-book-info">
+                                            <strong>{{ item.book.title if item.book else "Không rõ sách" }}</strong>
+                                            <span>
+                                                Đã trả:
+                                                {{ item.returned_quantity }}/{{ item.quantity }}
+                                            </span>
+                                        </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <span>Không có sách</span>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {{ record.borrow_date.strftime("%d/%m/%Y") if record.borrow_date else "-" }}
+                            </td>
+
+                            <td>
+                                {{ record.due_date.strftime("%d/%m/%Y") if record.due_date else "-" }}
+                            </td>
+
+                            <td>
+                                <span class="borrow-status {{ record.status }}">
+                                    {{ get_record_status_label(record.status) }}
+                                </span>
+                            </td>
+
+                            <td>
+                                {% if record.status == "borrowing" %}
+                                    <form method="POST"
+                                          action="{{ url_for('borrow.return_record', record_id=record.id) }}">
+                                        <input type="hidden"
+                                               name="next_url"
+                                               value="/admin?tab=borrow&view=records">
+
+                                        <button type="submit" class="btn-return">
+                                            Xác nhận trả
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <span class="no-action">Không có</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="borrow-empty">
+            <p>Chưa có phiếu mượn nào.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

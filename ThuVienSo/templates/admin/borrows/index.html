@@ -1,40 +1,39 @@
-
-
-{% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/borrow.css') }}">
-{% endblock %}
-
 {% block content %}
 <div class="borrow-page">
     <div class="borrow-header">
-        <h1>Quản lý yêu cầu mượn sách</h1>
         <p>Duyệt hoặc từ chối yêu cầu mượn sách của độc giả.</p>
     </div>
 
     <div class="borrow-filter">
-        <a href="{{ url_for('borrow.admin_list') }}"
-           class="{% if not selected_status %}active{% endif %}">
+        <button type="button"
+                class="{% if not selected_status and selected_view != 'records' %}active{% endif %}"
+                onclick="window.location.href='/admin?tab=borrow'">
             Tất cả
-        </a>
+        </button>
 
-        <a href="{{ url_for('borrow.admin_list', status='pending') }}"
-           class="{% if selected_status == 'pending' %}active{% endif %}">
+        <button type="button"
+                class="{% if selected_status == 'pending' %}active{% endif %}"
+                onclick="window.location.href='/admin?tab=borrow&status=pending'">
             Chờ duyệt
-        </a>
+        </button>
 
-        <a href="{{ url_for('borrow.admin_list', status='approved') }}"
-           class="{% if selected_status == 'approved' %}active{% endif %}">
+        <button type="button"
+                class="{% if selected_status == 'approved' %}active{% endif %}"
+                onclick="window.location.href='/admin?tab=borrow&status=approved'">
             Đã duyệt
-        </a>
+        </button>
 
-        <a href="{{ url_for('borrow.admin_list', status='rejected') }}"
-           class="{% if selected_status == 'rejected' %}active{% endif %}">
+        <button type="button"
+                class="{% if selected_status == 'rejected' %}active{% endif %}"
+                onclick="window.location.href='/admin?tab=borrow&status=rejected'">
             Từ chối
-        </a>
+        </button>
 
-        <a href="{{ url_for('borrow.admin_records') }}">
+        <button type="button"
+                class="{% if selected_view == 'records' %}active{% endif %}"
+                onclick="window.location.href='/admin?tab=borrow&view=records'">
             Phiếu mượn
-        </a>
+        </button>
     </div>
 
     {% if borrow_requests %}
@@ -58,9 +57,7 @@
                             <td>#{{ req.id }}</td>
 
                             <td>
-                                <strong>
-                                    {{ req.user.username if req.user else "Không rõ" }}
-                                </strong>
+                                <strong>{{ req.user.username if req.user else "Không rõ" }}</strong>
                             </td>
 
                             <td>
@@ -99,6 +96,10 @@
                                     <div class="borrow-actions">
                                         <form method="POST"
                                               action="{{ url_for('borrow.approve', borrow_id=req.id) }}">
+                                            <input type="hidden"
+                                                   name="next_url"
+                                                   value="/admin?tab=borrow{% if selected_status %}&status={{ selected_status }}{% endif %}">
+
                                             <button type="submit" class="btn-approve">
                                                 Duyệt
                                             </button>
@@ -107,12 +108,13 @@
                                         <button type="button"
                                                 class="btn-reject js-open-reject-modal"
                                                 data-action="{{ url_for('borrow.reject', borrow_id=req.id) }}"
+                                                data-next-url="/admin?tab=borrow{% if selected_status %}&status={{ selected_status }}{% endif %}"
                                                 data-request-id="{{ req.id }}">
                                             Từ chối
                                         </button>
                                     </div>
                                 {% else %}
-                                    <span class="no-action">Không có</span>
+                                    <span class="no-action"></span>
                                 {% endif %}
                             </td>
                         </tr>
@@ -127,7 +129,6 @@
     {% endif %}
 </div>
 
-<!-- POPUP TỪ CHỐI -->
 <div class="custom-modal-overlay" id="rejectBorrowModal">
     <div class="custom-modal">
         <div class="custom-modal-icon">!</div>
@@ -139,6 +140,8 @@
         </p>
 
         <form method="POST" id="rejectBorrowForm">
+            <input type="hidden" name="next_url" id="rejectNextUrl" value="/admin?tab=borrow">
+
             <div class="modal-form-group">
                 <textarea name="reject_reason"
                           id="rejectReason"

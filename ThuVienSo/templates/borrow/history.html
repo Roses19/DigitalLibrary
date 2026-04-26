@@ -7,90 +7,178 @@
 {% endblock %}
 
 {% block content %}
-<div class="borrow-history-page">
-    <div class="borrow-history-header">
+<div class="borrow-page">
+    <div class="borrow-header">
         <h1>Lịch sử mượn sách</h1>
-        <p>Theo dõi các sách bạn đã mượn và trạng thái trả sách.</p>
+        <p>Theo dõi yêu cầu mượn và lịch sử mượn sách của bạn.</p>
     </div>
 
-    <div class="borrow-history-card">
-        <table class="borrow-history-table">
-            <thead>
-                <tr>
-                    <th>Sách</th>
-                    <th>Ngày mượn</th>
-                    <th>Hạn trả</th>
-                    <th>Số lượng</th>
-                    <th>Đã trả</th>
-                    <th>Trạng thái mượn</th>
-                    <th>Trạng thái sách</th>
-                </tr>
-            </thead>
+    <!-- YÊU CẦU MƯỢN SÁCH -->
+    <h2 class="borrow-section-title">Yêu cầu mượn sách</h2>
 
-            <tbody>
-                {% for item in histories %}
-                <tr>
-                    <td class="borrow-book-cell">
-                        {% if item.cover_image %}
-                            <img src="{{ item.cover_image }}" alt="{{ item.book_title }}">
-                        {% else %}
-                            <img src="{{ url_for('static', filename='images/books/default-book.png') }}" alt="{{ item.book_title }}">
-                        {% endif %}
+    {% if borrow_requests %}
+        <div class="borrow-table-wrapper">
+            <table class="borrow-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Sách yêu cầu</th>
+                        <th>Ngày gửi</th>
+                        <th>Trạng thái</th>
+                        <th>Lý do từ chối</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
 
-                        <div>
-                            <strong>{{ item.book_title }}</strong>
-                            <a href="{{ url_for('book.detail', book_id=item.book_id) }}">
-                                Xem chi tiết
-                            </a>
-                        </div>
-                    </td>
+                <tbody>
+                    {% for req in borrow_requests %}
+                        <tr>
+                            <td>#{{ req.id }}</td>
 
-                    <td>
-                        {{ item.borrow_date.strftime('%d/%m/%Y') if item.borrow_date else "Không có dữ liệu" }}
-                    </td>
+                            <td>
+                                {% if req.items %}
+                                    {% for item in req.items %}
+                                        <div class="borrow-book-info">
+                                            <strong>{{ item.book.title }}</strong>
+                                            <span>Số lượng: {{ item.quantity }}</span>
+                                        </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <span>Không có sách</span>
+                                {% endif %}
+                            </td>
 
-                    <td>
-                        {{ item.due_date.strftime('%d/%m/%Y') if item.due_date else "Không có dữ liệu" }}
-                    </td>
+                            <td>
+                                {{ req.request_date.strftime("%d/%m/%Y %H:%M") if req.request_date else "-" }}
+                            </td>
 
-                    <td>{{ item.quantity }}</td>
-                    <td>{{ item.returned_quantity }}</td>
+                            <td>
+                                <span class="borrow-status {{ req.status }}">
+                                    {{ get_request_status_label(req.status) }}
+                                </span>
+                            </td>
 
-                    <td>
-                        <span class="borrow-status {{ item.borrow_status }}">
-                            {% if item.borrow_status == "borrowing" %}
-                                Đang mượn
-                            {% elif item.borrow_status == "returned" %}
-                                Đã trả
-                            {% elif item.borrow_status == "overdue" %}
-                                Quá hạn
-                            {% else %}
-                                {{ item.borrow_status }}
-                            {% endif %}
-                        </span>
-                    </td>
+                            <td>
+                                {{ req.reject_reason or "-" }}
+                            </td>
 
-                    <td>
-                        <span class="item-status {{ item.item_status }}">
-                            {% if item.item_status == "borrowing" %}
-                                Đang mượn
-                            {% elif item.item_status == "returned" %}
-                                Đã trả
-                            {% else %}
-                                {{ item.item_status }}
-                            {% endif %}
-                        </span>
-                    </td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="7" class="empty-history">
-                        Bạn chưa có lịch sử mượn sách.
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                            <td>
+                                {% if req.status == "pending" %}
+                                    <div class="borrow-actions">
+                                        <a href="{{ url_for('borrow.edit_form', borrow_id=req.id) }}"
+                                           class="btn-edit">
+                                            Sửa
+                                        </a>
+
+                                        <form method="POST"
+                                              action="{{ url_for('borrow.delete_request', borrow_id=req.id) }}"
+                                              class="delete-borrow-form">
+                                            <button type="button"
+                                                    class="btn-delete js-open-delete-modal"
+                                                    data-book-title="{% if req.items and req.items[0].book %}{{ req.items[0].book.title }}{% else %}yêu cầu này{% endif %}">
+                                                Xóa
+                                            </button>
+                                        </form>
+                                    </div>
+                                {% else %}
+                                    <span class="no-action">Không có</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="borrow-empty">
+            <p>Bạn chưa có yêu cầu mượn sách nào.</p>
+        </div>
+    {% endif %}
+
+    <!-- PHIẾU MƯỢN ĐÃ DUYỆT -->
+    <h2 class="borrow-section-title">Phiếu mượn đã duyệt</h2>
+
+    {% if borrow_records %}
+        <div class="borrow-table-wrapper">
+            <table class="borrow-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Sách đang mượn</th>
+                        <th>Ngày mượn</th>
+                        <th>Hạn trả</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for record in borrow_records %}
+                        <tr>
+                            <td>#{{ record.id }}</td>
+
+                            <td>
+                                {% if record.items %}
+                                    {% for item in record.items %}
+                                        <div class="borrow-book-info">
+                                            <strong>{{ item.book.title }}</strong>
+                                            <span>
+                                                Đã trả:
+                                                {{ item.returned_quantity }}/{{ item.quantity }}
+                                            </span>
+                                        </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <span>Không có sách</span>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {{ record.borrow_date.strftime("%d/%m/%Y") if record.borrow_date else "-" }}
+                            </td>
+
+                            <td>
+                                {{ record.due_date.strftime("%d/%m/%Y") if record.due_date else "-" }}
+                            </td>
+
+                            <td>
+                                <span class="borrow-status {{ record.status }}">
+                                    {{ get_record_status_label(record.status) }}
+                                </span>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="borrow-empty">
+            <p>Bạn chưa có phiếu mượn nào đã được duyệt.</p>
+        </div>
+    {% endif %}
+</div>
+<div class="custom-modal-overlay" id="deleteBorrowModal">
+    <div class="custom-modal">
+        <div class="custom-modal-icon">
+            !
+        </div>
+
+        <h3>Xác nhận xóa yêu cầu</h3>
+
+        <p id="deleteBorrowMessage">
+            Bạn có chắc muốn xóa yêu cầu mượn sách này không?
+        </p>
+
+        <div class="custom-modal-actions">
+            <button type="button" class="btn-modal-cancel" id="cancelDeleteBorrow">
+                Hủy
+            </button>
+
+            <button type="button" class="btn-modal-confirm" id="confirmDeleteBorrow">
+                Xóa yêu cầu
+            </button>
+        </div>
     </div>
 </div>
+
+<script src="{{ url_for('static', filename='js/borrow.js') }}"></script>
 {% endblock %}
