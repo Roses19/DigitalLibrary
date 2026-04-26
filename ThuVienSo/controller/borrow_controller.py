@@ -48,6 +48,73 @@ def borrow_history_controller():
     return render_template("borrow/history.html", histories=histories)
 
 
+# ================== THỦ THƯ/ADMIN: tra cứu lịch sử mượn ==================
+def borrow_lookup_controller():
+    role_name = (current_user.role.name if current_user.role else "").strip().lower()
+    if role_name not in {"thủ thư", "librarian", "admin", "quản trị", "quản trị viên"}:
+        flash("Bạn không có quyền truy cập trang này.", "error")
+        return redirect(url_for("home.index"))
+
+    keyword = request.args.get("q", "").strip()
+    status_filter = request.args.get("status", "").strip()
+    from_date = request.args.get("from_date", "").strip()
+    to_date = request.args.get("to_date", "").strip()
+
+    conditions = ["1=1"]
+    params = {}
+
+    if keyword:
+        conditions.append("(u.username LIKE :kw OR u.full_name LIKE :kw)")
+        params["kw"] = f"%{keyword}%"
+
+    if status_filter:
+        conditions.append("br.status = :status")
+        params["status"] = status_filter
+
+    if from_date:
+        conditions.append("DATE(br.borrow_date) >= :from_date")
+        params["from_date"] = from_date
+
+    if to_date:
+        conditions.append("DATE(br.borrow_date) <= :to_date")
+        params["to_date"] = to_date
+
+    where = " AND ".join(conditions)
+
+    sql = f"""
+        SELECT
+            br.id AS borrow_record_id,
+            br.borrow_date,
+            br.due_date,
+            br.status AS borrow_status,
+            u.id AS user_id,
+            u.username,
+            u.full_name,
+            GROUP_CONCAT(b.title SEPARATOR ', ') AS book_titles,
+            SUM(bri.quantity) AS total_quantity
+        FROM borrow_records br
+        JOIN users u ON br.user_id = u.id
+        JOIN borrow_record_items bri ON br.id = bri.borrow_record_id
+        JOIN books b ON bri.book_id = b.id
+        WHERE {where}
+        GROUP BY br.id, br.borrow_date, br.due_date, br.status, u.id, u.username, u.full_name
+        ORDER BY br.borrow_date DESC
+        LIMIT 200
+    """
+
+    records = db.session.execute(text(sql), params).mappings().all()
+
+    return render_template(
+        "borrow/lookup.html",
+        records=records,
+        keyword=keyword,
+        status_filter=status_filter,
+        from_date=from_date,
+        to_date=to_date,
+        now=datetime.now(),
+    )
+
+
 # ================== THỦ THƯ: danh sách đang mượn ==================
 def borrow_manage_controller():
     role_name = (current_user.role.name if current_user.role else "").strip().lower()

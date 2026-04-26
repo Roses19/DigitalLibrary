@@ -1,0 +1,99 @@
+{% extends "layout/base.html" %}
+{% block title %}Tra cứu lịch sử mượn sách{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/borrow.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-3">Tra cứu lịch sử mượn sách</h2>
+
+    <!-- FORM TÌM KIẾM -->
+    <form method="GET" action="{{ url_for('borrow.lookup') }}" class="card p-3 mb-4">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">Tên / Username độc giả</label>
+                <input type="text" name="q" class="form-control"
+                       placeholder="Nhập tên hoặc username..."
+                       value="{{ keyword }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Trạng thái</label>
+                <select name="status" class="form-select">
+                    <option value="">-- Tất cả --</option>
+                    <option value="borrowing" {{ 'selected' if status_filter == 'borrowing' }}>Đang mượn</option>
+                    <option value="returned"  {{ 'selected' if status_filter == 'returned'  }}>Đã trả</option>
+                    <option value="overdue"   {{ 'selected' if status_filter == 'overdue'   }}>Quá hạn</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Từ ngày</label>
+                <input type="date" name="from_date" class="form-control" value="{{ from_date }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Đến ngày</label>
+                <input type="date" name="to_date" class="form-control" value="{{ to_date }}">
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-primary w-100">Tìm kiếm</button>
+                <a href="{{ url_for('borrow.lookup') }}" class="btn btn-outline-secondary w-100">Xóa</a>
+            </div>
+        </div>
+    </form>
+
+    <!-- KẾT QUẢ -->
+    {% if records %}
+    <p class="text-muted mb-2">Tìm thấy <strong>{{ records|length }}</strong> phiếu mượn</p>
+    <table class="table table-bordered table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>#</th>
+                <th>Độc giả</th>
+                <th>Sách mượn</th>
+                <th>Số lượng</th>
+                <th>Ngày mượn</th>
+                <th>Hạn trả</th>
+                <th>Trạng thái</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in records %}
+            {% set is_overdue = r.borrow_status == 'borrowing' and r.due_date and r.due_date < now %}
+            <tr class="{{ 'table-danger' if is_overdue else '' }}">
+                <td>{{ r.borrow_record_id }}</td>
+                <td>
+                    <strong>{{ r.full_name }}</strong><br>
+                    <small class="text-muted">{{ r.username }}</small>
+                </td>
+                <td>{{ r.book_titles }}</td>
+                <td class="text-center">{{ r.total_quantity }}</td>
+                <td>{{ r.borrow_date.strftime('%d/%m/%Y') if r.borrow_date else '—' }}</td>
+                <td>
+                    {{ r.due_date.strftime('%d/%m/%Y') if r.due_date else '—' }}
+                    {% if is_overdue %}
+                        <span class="badge bg-danger ms-1">Quá hạn</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if r.borrow_status == 'borrowing' %}
+                        <span class="badge bg-warning text-dark">Đang mượn</span>
+                    {% elif r.borrow_status == 'returned' %}
+                        <span class="badge bg-success">Đã trả</span>
+                    {% elif r.borrow_status == 'overdue' %}
+                        <span class="badge bg-danger">Quá hạn</span>
+                    {% else %}
+                        <span class="badge bg-secondary">{{ r.borrow_status }}</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% elif keyword or status_filter or from_date or to_date %}
+    <div class="alert alert-info">Không tìm thấy phiếu mượn nào khớp với điều kiện.</div>
+    {% else %}
+    <div class="alert alert-secondary">Nhập điều kiện tìm kiếm để tra cứu lịch sử mượn sách.</div>
+    {% endif %}
+</div>
+{% endblock %}
