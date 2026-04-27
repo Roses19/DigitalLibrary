@@ -6,6 +6,8 @@ from ThuVienSo.routes.auth_routes import auth
 from ThuVienSo.routes.borrow_routes import borrow_bp
 from ThuVienSo.routes.admin_routes import admin_bp
 from ThuVienSo.routes.user_routes import user_bp
+from flask_mail import Mail
+from apscheduler.schedulers.background import BackgroundScheduler
 
 from ThuVienSo.controller.borrow_controller import get_user_borrow_state_for_book
 app = Flask(
@@ -29,6 +31,30 @@ def inject_borrow_helpers():
         "get_user_borrow_state_for_book": get_user_borrow_state_for_book
     }
 app.jinja_env.globals["get_user_borrow_state_for_book"] = get_user_borrow_state_for_book
+
+from ThuVienSo.services.mail_service import (
+    mail,
+    run_auto_email_jobs
+)
+
+app.config["MAIL_SERVER"] = "smtp.gmail.com"
+app.config["MAIL_PORT"] = 587
+app.config["MAIL_USE_TLS"] = True
+app.config["MAIL_USERNAME"] = "phuongnhu308@gmail.com"
+app.config["MAIL_PASSWORD"] = "eljiekkngxivskbf"
+app.config["MAIL_DEFAULT_SENDER"] = "phuongnhu308@gmail.com"
+
+mail.init_app(app)
+
+scheduler = BackgroundScheduler()
+
+scheduler.add_job(
+    func=run_auto_email_jobs,
+    trigger="interval",
+    hours=24
+)
+
+scheduler.start()
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)

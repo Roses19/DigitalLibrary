@@ -1,0 +1,179 @@
+{% block content %}
+    <div class="users-header">
+
+<h1>Báo cáo thư viện</h1>
+    </div>
+<div class="report-actions">
+
+    <a href="{{ url_for('admin_bp.export_report_excel') }}" class="btn btn-success">
+        Xuất file excel
+    </a>
+
+
+</div>
+<h2>Thống kê mượn trả</h2>
+
+<div class="dashboard-grid">
+
+    <div class="card">
+        <h3>Tổng lượt mượn</h3>
+        <p>{{ total_borrow }}</p>
+    </div>
+
+    <div class="card">
+        <h3>Đang mượn</h3>
+        <p>{{ borrowing }}</p>
+    </div>
+
+    <div class="card">
+        <h3>Đã trả</h3>
+        <p>{{ returned }}</p>
+    </div>
+
+    <div class="card">
+        <h3>Trễ hạn</h3>
+        <p>{{ overdue }}</p>
+    </div>
+
+    <div class="card">
+        <h3>Chưa trả</h3>
+        <p>{{ not_returned }}</p>
+    </div>
+
+</div>
+
+
+<h2>Thống kê kho sách</h2>
+
+<div class="dashboard-grid">
+
+    <div class="card">
+        <h3>Tổng đầu sách</h3>
+        <p>{{ total_titles }}</p>
+    </div>
+
+    <div class="card">
+        <h3>Tổng số bản sách</h3>
+        <p>{{ total_book_quantity }}</p>
+    </div>
+
+    <div class="card">
+        <h3>Sách còn trong kho</h3>
+        <p>{{ available_books }}</p>
+    </div>
+
+    <div class="card">
+        <h3>Sách đang được mượn</h3>
+        <p>{{ borrowed_books }}</p>
+    </div>
+
+    <div class="card">
+        <h3>Tỷ lệ sách được mượn</h3>
+        <p>{{ borrow_percent }}%</p>
+    </div>
+
+</div>
+
+<h2>Biểu đồ trạng thái mượn</h2>
+
+<div class="chart-box">
+    <canvas id="pieChart"></canvas>
+</div>
+
+<h2>Biểu đồ kho sách</h2>
+
+<div class="chart-box">
+    <canvas id="barChart"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+new Chart(document.getElementById('pieChart'), {
+    type: 'pie',
+    data: {
+        labels: [
+            'Đang mượn',
+            'Đã trả',
+            'Trễ hạn'
+        ],
+        datasets: [{
+            data: [
+                {{ borrowing }},
+                {{ returned }},
+                {{ overdue }}
+            ]
+        }]
+    },
+
+    options:{
+        responsive:true,
+        maintainAspectRatio:false
+    }
+});
+
+
+new Chart(document.getElementById('barChart'), {
+    type: 'bar',
+    data: {
+        labels: [
+            'Còn trong kho',
+            'Đang được mượn'
+        ],
+        datasets: [{
+            label: 'Số lượng sách',
+            data: [
+                {{ available_books }},
+                {{ borrowed_books }}
+            ]
+        }]
+    },
+
+    options:{
+        responsive:true,
+        maintainAspectRatio:false
+    }
+});
+</script>
+
+{% endblock %}
+<style>
+
+.chart-box{
+    width: 500px;
+    height: 350px;
+    margin-bottom: 40px;
+}
+
+.chart-box canvas{
+    width:100% !important;
+    height:100% !important;
+}
+
+    .dashboard-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap:12px;
+    margin-bottom:20px;
+}
+
+.card{
+    padding:10px 12px;
+    border-radius:8px;
+    box-shadow:0 1px 4px rgba(0,0,0,0.08);
+    background:#fff;
+    text-align:center;
+}
+
+.card h3{
+    font-size:13px;
+    margin-bottom:6px;
+    font-weight:600;
+}
+
+.card p{
+    font-size:18px;
+    margin:0;
+    font-weight:700;
+}
+</style>

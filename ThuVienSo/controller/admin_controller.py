@@ -1,14 +1,19 @@
 from flask import render_template, request, redirect, url_for, flash
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 from werkzeug.security import generate_password_hash
-
+from ThuVienSo.data.models.borrow_record import BorrowRecord
+from datetime import datetime
 from ThuVienSo import db
 from ThuVienSo.controller.borrow_controller import (
     get_borrow_item_branch_name,
     get_record_item_branch_name,
     safe_int,
 )
+from sqlalchemy import func
+from ThuVienSo.data.models.book_copy import BookCopy
+from ThuVienSo.data.models.borrow_record_item import BorrowRecordItem
 from ThuVienSo.data.models.book import Book
 from ThuVienSo.data.models.role import Role
 from ThuVienSo.data.models.user import User
@@ -120,6 +125,12 @@ def admin_dashboard():
     borrow_requests = []
     borrow_records = []
 
+    # REPORT
+    total_books = 0
+    total_users = 0
+    total_borrowing = 0
+    total_overdue = 0
+
     if active_tab == "borrow":
         if selected_view == "records":
             borrow_records = (
@@ -138,7 +149,75 @@ def admin_dashboard():
                 .order_by(BorrowRequest.created_at.desc())
                 .all()
             )
+    # ================= REPORT =================
 
+    # Tổng lượt mượn
+    total_borrow = BorrowRecord.query.count()
+
+    # Đang mượn
+    borrowing = (
+        BorrowRecord.query
+        .filter_by(status="borrowing")
+        .count()
+    )
+
+    # Đã trả
+    returned = (
+        BorrowRecord.query
+        .filter_by(status="returned")
+        .count()
+    )
+
+    # Trễ hạn
+    overdue = (
+        BorrowRecord.query
+        .filter(
+            BorrowRecord.status == "borrowing",
+            BorrowRecord.due_date < datetime.utcnow()
+        )
+        .count()
+    )
+
+    # Trả đúng hạn
+    returned_on_time = (
+        BorrowRecord.query
+        .filter(
+            BorrowRecord.status == "returned"
+        )
+        .count()
+    )
+
+    # Chưa trả
+    not_returned = borrowing
+
+    # Tổng đầu sách
+    total_titles = Book.query.count()
+
+    # Tổng số bản sách
+    total_book_quantity = (
+                              db.session.query(
+                                  func.sum(BookCopy.total_quantity)
+                              ).scalar()
+                          ) or 0
+
+    # Tổng sách còn
+    available_books = (
+                          db.session.query(
+                              func.sum(BookCopy.available_quantity)
+                          ).scalar()
+                      ) or 0
+
+    # Tổng sách đang được mượn
+    borrowed_books = total_book_quantity - available_books
+
+    # Tỷ lệ mượn
+    borrow_percent = 0
+
+    if total_book_quantity > 0:
+        borrow_percent = round(
+            (borrowed_books / total_book_quantity) * 100,
+            1
+        )
     return render_template(
         "admin/dashboard.html",
 
@@ -163,6 +242,19 @@ def admin_dashboard():
         get_record_status_label=get_record_status_label,
         get_borrow_item_branch_name=get_borrow_item_branch_name,
         get_record_item_branch_name=get_record_item_branch_name,
+
+        total_borrow=total_borrow,
+        borrowing=borrowing,
+        returned=returned,
+        overdue=overdue,
+        returned_on_time=returned_on_time,
+        not_returned=not_returned,
+
+        total_titles=total_titles,
+        total_book_quantity=total_book_quantity,
+        available_books=available_books,
+        borrowed_books=borrowed_books,
+        borrow_percent=borrow_percent,
     )
 
 def list_users():

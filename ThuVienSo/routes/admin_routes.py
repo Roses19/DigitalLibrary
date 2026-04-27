@@ -13,6 +13,7 @@ from ThuVienSo.controller.admin_controller import (
     toggle_user_status,
     delete_user,
 )
+from ThuVienSo.services.excel_service import export_report_excel
 
 from ThuVienSo.data.models.user import User
 from ThuVienSo.data.models.role import Role
@@ -69,3 +70,11 @@ def manage_rules():
         flash("Cập nhật quy định thành công!", "success")
         return redirect(url_for("admin_bp.dashboard", tab="rules"))
     return redirect(url_for("admin_bp.dashboard", tab="rules"))
+
+
+admin_bp.add_url_rule(
+    "/report/export/excel",
+    view_func=export_report_excel,
+    endpoint="export_report_excel"
+)
+

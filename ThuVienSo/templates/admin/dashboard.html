@@ -26,10 +26,7 @@
             {% endif %}
 
         {% elif active_tab == "report" %}
-            <section class="section active">
-                <h2>Báo cáo</h2>
-                <p>Chức năng báo cáo đang được phát triển.</p>
-            </section>
+                {% include "admin/reports.html" %}
 
         {% elif active_tab == "rules" %}
             {% include "admin/rules.html" %}
