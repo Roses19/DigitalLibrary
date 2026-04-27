@@ -498,7 +498,13 @@
     padding: 2.5rem;
     font-style: italic;
 }
+.section {
+    display: none;
+}
 
+.section.active {
+    display: block;
+}
 @media (max-width: 768px) {
     .users-header,
     .form-actions,

@@ -1,0 +1,63 @@
+
+{% block content %}
+
+    <h1 class="mb-4" style="color:#1a3c5e; font-weight:600;">Quản lý quy định thư viện</h1>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div id="flash-container">
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} flash-msg">
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<form method="POST" action="/rules" class="card p-4 shadow-sm">
+        <div class="mb-3">
+            <label>Số sách tối đa / lần mượn</label>
+            <input type="number"
+                   name="max_books_per_borrow"
+                   value="{{ rule.max_books_per_borrow }}"
+                   class="form-control">
+        </div>
+
+        <div class="mb-3">
+            <label>Số ngày mượn tối đa</label>
+            <input type="number"
+                   name="max_borrow_days"
+                   value="{{ rule.max_borrow_days }}"
+                   class="form-control">
+        </div>
+
+        <div class="mb-3">
+            <label>Số lần gia hạn tối đa</label>
+            <input type="number"
+                   name="max_extend_times"
+                   value="{{ rule.max_extend_times }}"
+                   class="form-control">
+        </div>
+
+
+
+        <button class="btn btn-primary w-100">
+            Lưu quy định
+        </button>
+
+    </form>
+<script>
+window.addEventListener("DOMContentLoaded", function () {
+    setTimeout(() => {
+        document.querySelectorAll(".flash-msg").forEach(el => {
+            el.style.transition = "0.5s";
+            el.style.opacity = "0";
+            el.style.transform = "translateY(-10px)";
+
+            setTimeout(() => el.remove(), 500);
+        });
+    }, 3000); // ⏱ 3 giây
+});
+</script>
+{% endblock %}

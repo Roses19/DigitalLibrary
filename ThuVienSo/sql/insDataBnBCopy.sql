@@ -81,3 +81,6 @@ INSERT INTO book_copies (book_id, branch_id, shelf_location, total_quantity, ava
 (1, 2, 'A1-02', 2, 2),
 (2, 1, 'B1-01', 10, 7),
 (3, 2, 'C1-01', 4, 2);
+
+INSERT INTO library_rules (max_books_per_borrow,max_borrow_days,max_extend_times,is_active) VALUES 
+(5, 15, 2, 1);

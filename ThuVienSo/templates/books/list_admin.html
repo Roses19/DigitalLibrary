@@ -126,17 +126,22 @@
 <td colspan="8">
 
 <!-- HEADER + BUTTON THÊM -->
-<h4 style="display:flex; justify-content:space-between; align-items:center;">
+<h4 class="branch-header">
     <span>Chi nhánh sách</span>
-      <button type="button" class="btn-secondary" style="margin-right=0"
-                        onclick="toggleBranch({{ book.id }})">
-                    Hủy
-                </button>
-    <button type="button"
-            class="btn-primary"
-            onclick="toggleAddCopy({{ book.id }})">
-        + Thêm
-    </button>
+
+    <div class="branch-actions">
+        <button type="button"
+                class="btn-secondary"
+                onclick="toggleBranch({{ book.id }})">
+            Hủy
+        </button>
+
+        <button type="button"
+                class="btn-primary"
+                onclick="toggleAddCopy({{ book.id }})">
+            + Thêm
+        </button>
+    </div>
 </h4>
 
 <!-- ================= ADD COPY FORM ================= -->

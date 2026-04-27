@@ -13,7 +13,7 @@
     <!-- CONTENT -->
     <div class="admin-content">
 
-        <div id="books" class="section active">
+        <div id="books" class="section">
             {% include "books/list_admin.html" %}
         </div>
 
@@ -30,30 +30,55 @@
         </div>
 
         <div id="rules" class="section">
-            <h2>Quy định</h2>
+            {% include "admin/rules.html" %}
         </div>
 
     </div>
 
 </div>
 <script>
-function openSection(event, id) {
+   function setActive(section) {
 
-    // ẩn tất cả section
-    document.querySelectorAll(".section").forEach(s => {
-        s.classList.remove("active");
+    document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+    document.querySelectorAll(".menu-btn").forEach(b => b.classList.remove("active"));
+
+    const active = document.getElementById(section || "books");
+    if (active) active.classList.add("active");
+
+    document.querySelectorAll(".menu-btn").forEach(btn => {
+        if (btn.getAttribute("onclick")?.includes(section)) {
+            btn.classList.add("active");
+        }
     });
+}
 
-    // bỏ active sidebar
+function openSection(event, id) {
+    document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+    document.querySelectorAll(".menu-btn").forEach(b => b.classList.remove("active"));
+
+    document.getElementById(id).classList.add("active");
+    event.currentTarget.classList.add("active");
+
+    history.replaceState(null, "", "?section=" + id);
+}
+
+window.addEventListener("DOMContentLoaded", function () {
+
+    const section = new URLSearchParams(window.location.search).get("section") || "books";
+
+    document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+
+    const active = document.getElementById(section);
+    if (active) active.classList.add("active");
+
     document.querySelectorAll(".menu-btn").forEach(b => {
         b.classList.remove("active");
+
+        const target = b.getAttribute("data-target");
+        if (target === section) {
+            b.classList.add("active");
+        }
     });
-
-    // hiện section được chọn
-    document.getElementById(id).classList.add("active");
-
-    // active button được click
-    event.currentTarget.classList.add("active");
-}
+});
 </script>
 {% endblock %}

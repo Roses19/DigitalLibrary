@@ -270,8 +270,6 @@ CREATE TABLE library_rules (
     max_borrow_days INT DEFAULT 14,
     max_extend_times INT DEFAULT 1,
 
-    fine_per_day DECIMAL(10,2) DEFAULT 0,
-
     is_active BOOLEAN DEFAULT TRUE,
 
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

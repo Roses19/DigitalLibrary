@@ -1,21 +1,9 @@
 <div class="sidebar">
 
-<button class="menu-btn active" onclick="openSection(event, 'books')">        📚 Quản lý sách
-    </button>
-
-<button class="menu-btn" onclick="openSection(event, 'users')">
-        👤 Người dùng
-    </button>
-
-<button class="menu-btn" onclick="openSection(event, 'borrow')">
-        🔄 Mượn trả
-    </button>
-
-<button class="menu-btn" onclick="openSection(event, 'report')">
-        📊 Báo cáo
-    </button>
-
-<button class="menu-btn" onclick="openSection(event, 'rules')">        ⚖️ Quy định
-    </button>
+<button class="menu-btn active" data-target="books" onclick="openSection(event, 'books')">📚 Quản lý sách</button>
+<button class="menu-btn" data-target="users" onclick="openSection(event, 'users')">👤 Người dùng</button>
+<button class="menu-btn" data-target="borrow" onclick="openSection(event, 'borrow')">🔄 Mượn trả</button>
+<button class="menu-btn" data-target="report" onclick="openSection(event, 'report')">📊 Báo cáo</button>
+<button class="menu-btn" data-target="rules" onclick="openSection(event, 'rules')">⚖️ Quy định</button>
 
 </div>
