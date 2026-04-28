@@ -1,27 +1,27 @@
 <nav class="navbar">
     <div class="navbar-container">
 
-        <!-- LEFT -->
         <div class="navbar-left">
             <a href="{{ url_for('home.index') }}" class="navbar-brand">
                 Thư Viện Số
             </a>
         </div>
 
-        <!-- CENTER -->
         <div class="navbar-links">
-            <a href="{{ url_for('home.index') }}">Trang chủ</a>
-            <a class="nav-link" href="{{ url_for('home.about') }}">Giới thiệu</a>
-            <a href="{{ url_for('book.book_list') }}" class="btn-back">Sách</a>
-            <a href="{{ url_for('book.categories') }}">Danh mục</a>
-            <a href="#">Các chi nhánh thư viện</a>
+            <a href="{{ url_for('home.index') }}"
+               class="{% if request.endpoint == 'home.index' %}nav-active{% endif %}">Trang chủ</a>
+            <a href="{{ url_for('home.about') }}"
+               class="{% if request.endpoint == 'home.about' %}nav-active{% endif %}">Giới thiệu</a>
+            <a href="{{ url_for('book.book_list') }}"
+               class="{% if request.endpoint in ['book.book_list', 'book.detail'] %}nav-active{% endif %}">Danh sách Sách</a>
+            <a href="{{ url_for('book.categories') }}"
+               class="{% if request.endpoint == 'book.categories' %}nav-active{% endif %}">Thể loại</a>
+            <a href="{{ url_for('book.branches') }}"
+               class="{% if request.endpoint == 'book.branches' %}nav-active{% endif %}">Các chi nhánh</a>
         </div>
 
-        <!-- RIGHT -->
         <div class="navbar-user">
-
             {% if current_user.is_authenticated %}
-                <!-- USER DROPDOWN -->
                 <div class="user-dropdown">
                     <button class="user-dropdown-btn">
                         <span>Hi, {{ current_user.username }}</span>
@@ -30,17 +30,17 @@
 
                     <div class="user-dropdown-menu">
                         <a href="{{ url_for('user.user_profile') }}" class="dropdown-item">
-                            👤 Thông tin cá nhân
+                            Thông tin cá nhân
                         </a>
 
                         <a href="{{ url_for('borrow.history') }}" class="dropdown-item">
-                            📚 Lịch sử mượn sách
+                            Lịch sử mượn sách
                         </a>
 
                         <div class="dropdown-divider"></div>
 
                         <a href="{{ url_for('auth.logout') }}" class="dropdown-item logout">
-                            🚪 Đăng xuất
+                            Đăng xuất
                         </a>
                     </div>
                 </div>
@@ -50,7 +50,6 @@
                 {% if role_name in ['admin', 'quản trị', 'quản trị viên', 'thủ thư', 'librarian'] %}
                     <a href="{{ url_for('admin_bp.dashboard') }}">Quản lý</a>
                 {% endif %}
-
             {% else %}
                 <a href="{{ url_for('auth.register') }}">Đăng ký</a>
                 <a href="{{ url_for('auth.login') }}">Đăng nhập</a>

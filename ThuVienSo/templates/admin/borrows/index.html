@@ -66,9 +66,11 @@
                                         <div class="borrow-book-info">
                                             <strong>{{ item.book.title if item.book else "Không rõ sách" }}</strong>
                                             <span>
+                                                Chi nhánh: {{ get_borrow_item_branch_name(item) if get_borrow_item_branch_name is defined else (item.book_copy.branch.name if item.book_copy and item.book_copy.branch else "Chưa chọn") }}
+                                                |
                                                 SL yêu cầu: {{ item.quantity }}
                                                 |
-                                                Còn: {{ item.book.available_quantity if item.book else 0 }}
+                                                Còn: {{ item.book_copy.available_quantity if item.book_copy else (item.book.available if item.book else 0) }}
                                             </span>
                                         </div>
                                     {% endfor %}

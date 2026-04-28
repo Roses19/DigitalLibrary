@@ -6,7 +6,7 @@ from ThuVienSo.controller.book_controller import (
     get_categories,
     create_category,
     update_category,
-    delete_category, get_book_list, get_admin_book_list, create_book, update_book, delete_book, update_book_copy,
+    delete_category, get_book_list, get_admin_book_list, get_branches, create_book, update_book, delete_book, update_book_copy,
     create_book_copy
 )
 
@@ -31,6 +31,11 @@ def detail(book_id):
 @book_bp.route("/categories")
 def categories():
     return get_categories()
+
+
+@book_bp.route("/branches")
+def branches():
+    return get_branches()
 
 
 @book_bp.route("/categories/create", methods=["POST"])

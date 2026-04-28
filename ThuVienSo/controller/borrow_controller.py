@@ -325,6 +325,26 @@ def get_borrow_item_branch_name(item):
     return "Chưa chọn chi nhánh"
 
 
+def get_record_item_branch_name(item):
+    if not item:
+        return "Chưa chọn chi nhánh"
+
+    if hasattr(item, "book_copy") and item.book_copy and item.book_copy.branch:
+        return item.book_copy.branch.name
+
+    if hasattr(item, "book_copy_id") and item.book_copy_id:
+        selected_copy = (
+            BookCopy.query
+            .options(joinedload(BookCopy.branch))
+            .get(item.book_copy_id)
+        )
+
+        if selected_copy and selected_copy.branch:
+            return selected_copy.branch.name
+
+    return "Chưa chọn chi nhánh"
+
+
 def validate_borrow_selection(book, branch_id, quantity):
     """
     Kiểm tra chi nhánh + số lượng mượn.
@@ -577,7 +597,25 @@ def show_borrow_form(book_id):
                 "Nếu muốn đổi chi nhánh, vui lòng sửa phiếu mượn hiện có.",
                 "warning"
             )
-            return redirect(url_for("borrow.edit_form", borrow_id=pending_item.borrow_request_id))
+            existing_copy = get_copy_by_branch(book, existing_branch_id)
+            requested_copy = get_copy_by_branch(book, selected_branch_id)
+
+            return render_template(
+                "borrow/branch_conflict.html",
+                book=book,
+                existing_branch_name=(
+                    existing_copy.branch.name
+                    if existing_copy and existing_copy.branch
+                    else "chi nhánh khác"
+                ),
+                requested_branch_name=(
+                    requested_copy.branch.name
+                    if requested_copy and requested_copy.branch
+                    else "chi nhánh đang chọn"
+                ),
+                edit_url=url_for("borrow.edit_form", borrow_id=pending_item.borrow_request_id),
+                detail_url=url_for("book.detail", book_id=book.id),
+            )
 
         if selected_branch_id and not existing_branch_id:
             return redirect(
@@ -730,6 +768,7 @@ def get_borrow_history():
         get_request_status_label=get_request_status_label,
         get_record_status_label=get_record_status_label,
         get_borrow_item_branch_name=get_borrow_item_branch_name,
+        get_record_item_branch_name=get_record_item_branch_name,
     )
 
 
@@ -926,6 +965,7 @@ def get_admin_borrow_requests():
         selected_status=status,
         selected_view="",
         get_request_status_label=get_request_status_label,
+        get_borrow_item_branch_name=get_borrow_item_branch_name,
     )
 
 
@@ -1077,6 +1117,7 @@ def get_admin_borrow_records():
         borrow_records=borrow_records,
         selected_view="records",
         get_record_status_label=get_record_status_label,
+        get_record_item_branch_name=get_record_item_branch_name,
     )
 
 

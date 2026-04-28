@@ -104,7 +104,7 @@
 
                                     <!-- MƯỢN SÁCH THEO ĐÚNG CHI NHÁNH -->
                                     <form action="{{ url_for('borrow.borrow_form', book_id=book.id, branch_id=copy.branch_id) }}"
-                                          method="post"
+                                          method="get"
                                           class="borrow-form detail-borrow-form">
 
                                         <input type="hidden"

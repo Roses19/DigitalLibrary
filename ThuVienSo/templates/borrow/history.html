@@ -131,6 +131,7 @@
                         <tr>
                             <th>ID</th>
                             <th>Sách mượn</th>
+                            <th>Chi nhánh</th>
                             <th>Ngày mượn</th>
                             <th>Hạn trả</th>
                             <th>Trạng thái</th>
@@ -152,6 +153,18 @@
                                         {% endfor %}
                                     {% else %}
                                         <span class="muted-text">Không có sách</span>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {% if record.items %}
+                                        {% for item in record.items %}
+                                            <div>
+                                                {{ get_record_item_branch_name(item) if get_record_item_branch_name is defined else (item.book_copy.branch.name if item.book_copy and item.book_copy.branch else "Chưa chọn") }}
+                                            </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        —
                                     {% endif %}
                                 </td>
 

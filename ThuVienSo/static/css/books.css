@@ -551,7 +551,13 @@
 
 .filter-arrow {
     transition: transform 0.2s ease;
-    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    line-height: 1;
 }
 
 .filter-options {
@@ -585,6 +591,69 @@
 
 .filter-item span {
     display: inline-block;
+}
+
+.filter-item-all {
+    font-weight: 800;
+    color: #17466d;
+}
+
+.branches-page {
+    max-width: 1180px;
+    margin: 42px auto;
+    padding: 0 28px;
+}
+
+.branches-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 22px;
+}
+
+.branch-card {
+    background: #ffffff;
+    border: 1px solid #e1e8ef;
+    border-radius: 12px;
+    padding: 22px;
+    box-shadow: 0 6px 18px rgba(15, 45, 80, 0.08);
+}
+
+.branch-card h2 {
+    margin: 0 0 8px;
+    color: #123b5d;
+    font-size: 22px;
+    font-weight: 800;
+}
+
+.branch-address {
+    margin: 0 0 18px;
+    color: #555555;
+    min-height: 22px;
+}
+
+.branch-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.branch-stats div {
+    background: #f4f8fc;
+    border-radius: 10px;
+    padding: 12px;
+}
+
+.branch-stats span {
+    display: block;
+    color: #667085;
+    font-size: 12px;
+    margin-bottom: 6px;
+}
+
+.branch-stats strong {
+    color: #123b5d;
+    font-size: 22px;
+    font-weight: 900;
 }
 
 .filter-empty {

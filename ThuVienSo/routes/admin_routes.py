@@ -27,35 +27,7 @@ admin_bp = Blueprint("admin_bp", __name__, url_prefix="/admin")
 @admin_bp.route("", methods=["GET"])
 @admin_bp.route("/", methods=["GET"])
 def dashboard():
-    users = User.query.order_by(User.id.asc()).all()
-    roles = Role.query.order_by(Role.id.asc()).all()
-
-    # BOOKS (🔥 QUAN TRỌNG)
-    books = Book.query.options(
-        joinedload(Book.copies).joinedload(BookCopy.branch),
-        joinedload(Book.category),
-        joinedload(Book.publisher)
-    ).order_by(Book.id.desc()).all()
-
-    categories = Category.query.all()
-    publishers = Publisher.query.all()
-    branches = Branch.query.all()
-    rule = LibraryRule.query.filter_by(is_active=True).first()
-
-    active_section = request.args.get("section", "books")
-
-    return render_template(
-        "admin/dashboard.html",
-        users=users,
-        roles=roles,
-
-        books=books,
-        categories=categories,
-        publishers=publishers,
-        branches=branches,
-        rule=rule,
-        active_section=active_section
-    )
+    return admin_dashboard()
 
 @admin_bp.route("/users", methods=["GET"])
 def users():
@@ -86,11 +58,15 @@ def user_delete(user_id):
 def manage_rules():
     rule = LibraryRule.query.filter_by(is_active=True).first()
     if request.method == 'POST':
+        if not rule:
+            rule = LibraryRule(is_active=True)
+            db.session.add(rule)
+
         rule.max_books_per_borrow = int(request.form.get('max_books_per_borrow'))
         rule.max_borrow_days = int(request.form.get('max_borrow_days'))
         rule.max_extend_times = int(request.form.get('max_extend_times'))
 
         db.session.commit()
         flash("Cập nhật quy định thành công!", "success")
-        return redirect(url_for("admin_bp.dashboard", section="rules"))
-    return redirect(url_for("admin_bp.dashboard"))
+        return redirect(url_for("admin_bp.dashboard", tab="rules"))
+    return redirect(url_for("admin_bp.dashboard", tab="rules"))

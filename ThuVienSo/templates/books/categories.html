@@ -1,107 +1,524 @@
 {% extends "layout/base.html" %}
-{% block title %}Quản lý danh mục - Thư Viện Số{% endblock %}
+
+{% block title %}
+    Thể loại - Thư Viện Số
+{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/books.css') }}">
+
+<style>
+    .categories-page {
+        width: 100%;
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 48px 24px 90px;
+    }
+
+    .categories-hero {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 28px;
+    }
+
+    .categories-title-block h1 {
+        margin: 0 0 8px;
+        color: #003b63;
+        font-size: 42px;
+        font-weight: 800;
+        line-height: 1.15;
+    }
+
+    .categories-title-block p {
+        margin: 0;
+        color: #5f6b76;
+        font-size: 16px;
+    }
+
+    .btn-primary,
+    .btn-secondary,
+    .btn-edit,
+    .btn-delete {
+        border: none;
+        border-radius: 10px;
+        font-weight: 700;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: 0.2s ease;
+        white-space: nowrap;
+    }
+
+    .btn-primary {
+        background: #f26b2f;
+        color: #fff;
+        min-height: 44px;
+        padding: 0 20px;
+        box-shadow: 0 8px 18px rgba(242, 107, 47, 0.22);
+    }
+
+    .btn-primary:hover {
+        background: #e75f24;
+        transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+        background: #e9eef3;
+        color: #003b63;
+        min-height: 42px;
+        padding: 0 18px;
+    }
+
+    .btn-secondary:hover {
+        background: #dce4ec;
+    }
+
+    .btn-edit {
+        background: #2563eb;
+        color: #fff;
+        height: 40px;
+        padding: 0 18px;
+    }
+
+    .btn-edit:hover {
+        background: #1d4ed8;
+    }
+
+    .btn-delete {
+        background: #dc2626;
+        color: #fff;
+        height: 40px;
+        padding: 0 18px;
+    }
+
+    .btn-delete:hover {
+        background: #b91c1c;
+    }
+
+    .btn-delete:disabled {
+        background: #cbd5e1;
+        cursor: not-allowed;
+        color: #64748b;
+        box-shadow: none;
+    }
+
+    .readonly-note {
+        background: #fff7e6;
+        color: #8a5a00;
+        border: 1px solid #ffe1a3;
+        border-radius: 14px;
+        padding: 14px 18px;
+        margin-bottom: 20px;
+        font-weight: 600;
+    }
+
+    .alert {
+        padding: 14px 16px;
+        border-radius: 12px;
+        margin-bottom: 18px;
+        font-weight: 600;
+    }
+
+    .alert-success {
+        background: #e7f7ed;
+        color: #177245;
+        border: 1px solid #bde8cc;
+    }
+
+    .alert-error,
+    .alert-danger {
+        background: #fdecec;
+        color: #b42318;
+        border: 1px solid #fac5c5;
+    }
+
+    .alert-warning {
+        background: #fff7e6;
+        color: #8a5a00;
+        border: 1px solid #ffe1a3;
+    }
+
+    .category-form-card {
+        background: #fff;
+        border-radius: 18px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.07);
+        border: 1px solid #edf1f5;
+    }
+
+    .category-form-card h2 {
+        margin: 0 0 18px;
+        color: #003b63;
+        font-size: 24px;
+        font-weight: 800;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1.5fr;
+        gap: 18px;
+        align-items: start;
+    }
+
+    .form-group label {
+        display: block;
+        color: #003b63;
+        font-weight: 700;
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+
+    .form-group input,
+    .form-group textarea {
+        width: 100%;
+        border: 1px solid #ced6df;
+        border-radius: 10px;
+        padding: 12px 14px;
+        font-size: 15px;
+        outline: none;
+        box-sizing: border-box;
+        background: #fff;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+        border-color: #0d5b8c;
+        box-shadow: 0 0 0 3px rgba(13, 91, 140, 0.12);
+    }
+
+    .required {
+        color: #dc2626;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 18px;
+    }
+
+    .categories-table-card {
+        background: #fff;
+        border-radius: 20px;
+        box-shadow: 0 16px 45px rgba(0, 0, 0, 0.07);
+        border: 1px solid #edf1f5;
+        overflow: hidden;
+    }
+
+    .categories-table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+    }
+
+    .categories-table thead {
+        background: #15496f;
+        color: #fff;
+    }
+
+    .categories-table th {
+        padding: 16px 18px;
+        text-align: left;
+        font-size: 15px;
+        font-weight: 800;
+    }
+
+    .categories-table td {
+        padding: 18px;
+        border-bottom: 1px solid #edf1f5;
+        color: #1f2937;
+        vertical-align: middle;
+        font-size: 15px;
+    }
+
+    .categories-table tbody tr:hover {
+        background: #f8fbfd;
+    }
+
+    .categories-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .col-id {
+        width: 70px;
+    }
+
+    .col-name {
+        width: 240px;
+    }
+
+    .col-count {
+        width: 120px;
+        text-align: center;
+    }
+
+    .col-actions {
+        width: 220px;
+        text-align: center;
+    }
+
+    .cat-name {
+        color: #003b63;
+        font-weight: 800;
+    }
+
+    .cat-desc {
+        color: #4b5563;
+        line-height: 1.5;
+    }
+
+    .book-count-badge {
+        min-width: 42px;
+        height: 42px;
+        padding: 0 14px;
+        border-radius: 999px;
+        background: #e8f2fb;
+        color: #003b63;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+    }
+
+    .cat-actions {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .cat-actions form {
+        margin: 0;
+    }
+
+    .edit-row td {
+        background: #f8fbfd;
+        padding: 22px;
+    }
+
+    .edit-inline-form {
+        background: #fff;
+        border: 1px solid #e3e9ef;
+        border-radius: 16px;
+        padding: 20px;
+    }
+
+    .empty-table {
+        text-align: center;
+        color: #6b7280;
+        padding: 36px !important;
+    }
+
+    @media (max-width: 900px) {
+        .categories-hero {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .categories-table-card {
+            overflow-x: auto;
+        }
+
+        .categories-table {
+            min-width: 860px;
+        }
+    }
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="categories-page">
-    <div class="categories-header">
-        <h1>Quản lý danh mục</h1>
-        <button class="btn-primary" onclick="toggleForm('add-form')">+ Thêm danh mục</button>
+
+    <div class="categories-hero">
+        <div class="categories-title-block">
+            <h1>Thông tin các thể loại</h1>
+        </div>
+
+        {% if can_manage_categories %}
+            <button class="btn-primary" onclick="toggleForm('add-form')">
+                + Thêm danh mục
+            </button>
+        {% endif %}
     </div>
+
+
 
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
-                <div class="alert alert-{{ category }}">{{ message }}</div>
+                <div class="alert alert-{{ category }}">
+                    {{ message }}
+                </div>
             {% endfor %}
         {% endif %}
     {% endwith %}
 
-    <!-- Form thêm mới -->
-    <div class="category-form-card" id="add-form" style="display:none;">
-        <h2>Thêm danh mục mới</h2>
-        <form action="{{ url_for('book.category_create') }}" method="post">
-            <div class="form-group">
-                <label for="add-name">Tên danh mục <span class="required">*</span></label>
-                <input type="text" id="add-name" name="name" placeholder="VD: Lịch sử" required>
-            </div>
-            <div class="form-group">
-                <label for="add-desc">Mô tả</label>
-                <textarea id="add-desc" name="description" rows="2" placeholder="Mô tả ngắn về danh mục..."></textarea>
-            </div>
-            <div class="form-actions">
-                <button type="submit" class="btn-primary">Lưu</button>
-                <button type="button" class="btn-secondary" onclick="toggleForm('add-form')">Hủy</button>
-            </div>
-        </form>
-    </div>
+    {% if can_manage_categories %}
+        <!-- FORM THÊM MỚI -->
+        <div class="category-form-card" id="add-form" style="display:none;">
+            <h2>Thêm danh mục mới</h2>
 
-    <!-- Bảng danh mục -->
-    <div class="categories-table-wrap">
+            <form action="{{ url_for('book.category_create') }}" method="post">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="add-name">
+                            Tên danh mục <span class="required">*</span>
+                        </label>
+                        <input type="text"
+                               id="add-name"
+                               name="name"
+                               placeholder="VD: Lịch sử"
+                               required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="add-desc">Mô tả</label>
+                        <textarea id="add-desc"
+                                  name="description"
+                                  rows="3"
+                                  placeholder="Mô tả ngắn về danh mục..."></textarea>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">
+                        Lưu danh mục
+                    </button>
+
+                    <button type="button"
+                            class="btn-secondary"
+                            onclick="toggleForm('add-form')">
+                        Hủy
+                    </button>
+                </div>
+            </form>
+        </div>
+    {% endif %}
+
+    <!-- BẢNG DANH MỤC -->
+    <div class="categories-table-card">
         <table class="categories-table">
             <thead>
                 <tr>
-                    <th>#</th>
-                    <th>Tên danh mục</th>
+                    <th class="col-id">#</th>
+                    <th class="col-name">Tên danh mục</th>
                     <th>Mô tả</th>
-                    <th>Số sách</th>
-                    <th>Thao tác</th>
+                    <th class="col-count">Số sách</th>
+
+                    {% if can_manage_categories %}
+                        <th class="col-actions">Thao tác</th>
+                    {% endif %}
                 </tr>
             </thead>
+
             <tbody>
                 {% if categories %}
                     {% for cat in categories %}
-                    <tr>
-                        <td>{{ loop.index }}</td>
-                        <td class="cat-name">{{ cat.name }}</td>
-                        <td class="cat-desc">{{ cat.description or '—' }}</td>
-                        <td>
-                            <span class="book-count-badge">{{ cat.book_count }}</span>
-                        </td>
-                        <td class="cat-actions">
-                            <button class="btn-edit" onclick="toggleEditForm({{ cat.id }})">Sửa</button>
-                            <form action="{{ url_for('book.category_delete', category_id=cat.id) }}" method="post"
-                                  onsubmit="return confirm('Xóa danh mục \'{{ cat.name }}\'?')">
-                                <button type="submit" class="btn-delete"
-                                    {% if cat.book_count > 0 %}disabled title="Không thể xóa vì có sách"{% endif %}>
-                                    Xóa
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                    <!-- Form sửa inline -->
-                    <tr class="edit-row" id="edit-row-{{ cat.id }}" style="display:none;">
-                        <td colspan="5">
-                            <form action="{{ url_for('book.category_edit', category_id=cat.id) }}" method="post"
-                                  class="edit-inline-form">
-                                <div class="form-group">
-                                    <label>Tên danh mục <span class="required">*</span></label>
-                                    <input type="text" name="name" value="{{ cat.name }}" required>
-                                </div>
-                                <div class="form-group">
-                                    <label>Mô tả</label>
-                                    <textarea name="description" rows="2">{{ cat.description }}</textarea>
-                                </div>
-                                <div class="form-actions">
-                                    <button type="submit" class="btn-primary">Cập nhật</button>
-                                    <button type="button" class="btn-secondary"
-                                            onclick="toggleEditForm({{ cat.id }})">Hủy</button>
-                                </div>
-                            </form>
-                        </td>
-                    </tr>
+                        <tr>
+                            <td>{{ loop.index }}</td>
+
+                            <td class="cat-name">
+                                {{ cat.name }}
+                            </td>
+
+                            <td class="cat-desc">
+                                {{ cat.description or '—' }}
+                            </td>
+
+                            <td class="col-count">
+                                <span class="book-count-badge">
+                                    {{ cat.book_count or 0 }}
+                                </span>
+                            </td>
+
+                            {% if can_manage_categories %}
+                                <td>
+                                    <div class="cat-actions">
+                                        <button type="button"
+                                                class="btn-edit"
+                                                onclick="toggleEditForm({{ cat.id }})">
+                                            Sửa
+                                        </button>
+
+                                        <form action="{{ url_for('book.category_delete', category_id=cat.id) }}"
+                                              method="post"
+                                              onsubmit="return confirm('Xóa danh mục {{ cat.name }}?')">
+                                            <button type="submit"
+                                                    class="btn-delete"
+                                                    {% if (cat.book_count or 0) > 0 %}
+                                                        disabled
+                                                        title="Không thể xóa vì danh mục đang có sách"
+                                                    {% endif %}>
+                                                Xóa
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            {% endif %}
+                        </tr>
+
+                        {% if can_manage_categories %}
+                            <!-- FORM SỬA INLINE -->
+                            <tr class="edit-row" id="edit-row-{{ cat.id }}" style="display:none;">
+                                <td colspan="5">
+                                    <form action="{{ url_for('book.category_edit', category_id=cat.id) }}"
+                                          method="post"
+                                          class="edit-inline-form">
+
+                                        <div class="form-grid">
+                                            <div class="form-group">
+                                                <label>
+                                                    Tên danh mục <span class="required">*</span>
+                                                </label>
+                                                <input type="text"
+                                                       name="name"
+                                                       value="{{ cat.name }}"
+                                                       required>
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label>Mô tả</label>
+                                                <textarea name="description"
+                                                          rows="3">{{ cat.description or '' }}</textarea>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-actions">
+                                            <button type="submit" class="btn-primary">
+                                                Cập nhật
+                                            </button>
+
+                                            <button type="button"
+                                                    class="btn-secondary"
+                                                    onclick="toggleEditForm({{ cat.id }})">
+                                                Hủy
+                                            </button>
+                                        </div>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endif %}
                     {% endfor %}
                 {% else %}
                     <tr>
-                        <td colspan="5" class="empty-table">Chưa có danh mục nào.</td>
+                        <td colspan="{% if can_manage_categories %}5{% else %}4{% endif %}"
+                            class="empty-table">
+                            Chưa có danh mục nào.
+                        </td>
                     </tr>
                 {% endif %}
             </tbody>
         </table>
     </div>
+
 </div>
 {% endblock %}
 
@@ -109,12 +526,22 @@
 <script>
 function toggleForm(id) {
     const el = document.getElementById(id);
-    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+
+    if (!el) {
+        return;
+    }
+
+    el.style.display = el.style.display === "none" ? "block" : "none";
 }
 
 function toggleEditForm(catId) {
-    const row = document.getElementById('edit-row-' + catId);
-    row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+    const row = document.getElementById("edit-row-" + catId);
+
+    if (!row) {
+        return;
+    }
+
+    row.style.display = row.style.display === "none" ? "table-row" : "none";
 }
 </script>
 {% endblock %}

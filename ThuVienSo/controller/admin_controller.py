@@ -4,7 +4,11 @@ from sqlalchemy.orm import joinedload
 from werkzeug.security import generate_password_hash
 
 from ThuVienSo import db
-from ThuVienSo.controller.borrow_controller import safe_int
+from ThuVienSo.controller.borrow_controller import (
+    get_borrow_item_branch_name,
+    get_record_item_branch_name,
+    safe_int,
+)
 from ThuVienSo.data.models.book import Book
 from ThuVienSo.data.models.role import Role
 from ThuVienSo.data.models.user import User
@@ -13,6 +17,9 @@ from ThuVienSo.data.models.borrow_record import BorrowRecord
 from ThuVienSo.data.models.book import Book
 from ThuVienSo.data.models.category import Category
 from ThuVienSo.data.models.publisher import Publisher
+from ThuVienSo.data.models.branch import Branch
+from ThuVienSo.data.models.book_copy import BookCopy
+from ThuVienSo.data.models.rule import LibraryRule
 
 USER_STATUSES = ["active", "locked", "inactive"]
 BOOK_STATUSES = ["available", "out_of_stock"]
@@ -76,6 +83,7 @@ def admin_dashboard():
     selected_status = request.args.get("status", "").strip()
     selected_view = request.args.get("view", "").strip()
     selected_category = request.args.get("category", "").strip()
+    rule = LibraryRule.query.filter_by(is_active=True).first()
 
     # USERS
     users = User.query.order_by(User.id.asc()).all()
@@ -86,10 +94,11 @@ def admin_dashboard():
     # BOOKS
     categories = Category.query.order_by(Category.name.asc()).all()
     publishers = Publisher.query.order_by(Publisher.name.asc()).all()
+    branches = Branch.query.order_by(Branch.name.asc()).all()
 
     books = (
         Book.query
-        .options(joinedload(Book.copies))
+        .options(joinedload(Book.copies).joinedload(BookCopy.branch))
         .order_by(Book.created_at.desc())
         .all()
     )
@@ -100,7 +109,12 @@ def admin_dashboard():
         if category_id:
             book_query = book_query.filter(Book.category_id == category_id)
 
-    books = book_query.order_by(Book.id.asc()).all()
+    books = (
+        book_query
+        .options(joinedload(Book.copies).joinedload(BookCopy.branch))
+        .order_by(Book.id.asc())
+        .all()
+    )
 
     # BORROWS
     borrow_requests = []
@@ -140,11 +154,15 @@ def admin_dashboard():
         books=books,
         categories=categories,
         publishers=publishers,
+        branches=branches,
 
         borrow_requests=borrow_requests,
         borrow_records=borrow_records,
+        rule=rule,
         get_request_status_label=get_request_status_label,
         get_record_status_label=get_record_status_label,
+        get_borrow_item_branch_name=get_borrow_item_branch_name,
+        get_record_item_branch_name=get_record_item_branch_name,
     )
 
 def list_users():

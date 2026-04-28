@@ -83,6 +83,35 @@
                 </div>
             </div>
 
+            <!-- Chi nhánh -->
+            <div class="filter-group {% if searched and books %}open{% endif %}">
+                <button type="button" class="filter-toggle">
+                    <span>Chi nhánh</span>
+                    <span class="filter-arrow">▾</span>
+                </button>
+
+                <div class="filter-options">
+                    {% if branch_all_selected %}
+                        <label class="filter-item filter-item-all">
+                            <input type="checkbox" checked disabled>
+                            <span>Tất cả</span>
+                        </label>
+                    {% elif branches %}
+                        {% for branch in branches %}
+                            <label class="filter-item">
+                                <input type="checkbox"
+                                       name="branch"
+                                       value="{{ branch.id }}"
+                                       {% if branch.id|string in selected_branches %}checked{% endif %}>
+                                <span>{{ branch.name }}</span>
+                            </label>
+                        {% endfor %}
+                    {% else %}
+                        <p class="filter-empty">Không có chi nhánh phù hợp</p>
+                    {% endif %}
+                </div>
+            </div>
+
             <!-- Tình trạng -->
             <div class="filter-group {% if searched and books %}open{% endif %}">
                 <button type="button" class="filter-toggle">

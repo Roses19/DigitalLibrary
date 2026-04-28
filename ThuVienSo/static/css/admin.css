@@ -661,3 +661,238 @@
 .admin-content .book-table {
     min-width: 1120px;
 }
+
+/* =========================
+   ADMIN USERS TABLE FIT FIX
+   ========================= */
+
+.admin-content .users-table-wrap {
+    overflow-x: hidden;
+}
+
+.admin-content .users-table {
+    width: 100%;
+    min-width: 0;
+    table-layout: fixed;
+    font-size: 13px;
+}
+
+.admin-content .users-table th,
+.admin-content .users-table td {
+    padding: 10px 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.admin-content .users-table th:nth-child(1),
+.admin-content .users-table td:nth-child(1) {
+    width: 42px;
+    text-align: center;
+}
+
+.admin-content .users-table th:nth-child(2),
+.admin-content .users-table td:nth-child(2) {
+    width: 15%;
+}
+
+.admin-content .users-table th:nth-child(3),
+.admin-content .users-table td:nth-child(3) {
+    width: 12%;
+}
+
+.admin-content .users-table th:nth-child(4),
+.admin-content .users-table td:nth-child(4) {
+    width: 20%;
+}
+
+.admin-content .users-table th:nth-child(5),
+.admin-content .users-table td:nth-child(5) {
+    width: 11%;
+}
+
+.admin-content .users-table th:nth-child(6),
+.admin-content .users-table td:nth-child(6) {
+    width: 11%;
+}
+
+.admin-content .users-table th:nth-child(7),
+.admin-content .users-table td:nth-child(7) {
+    width: 11%;
+}
+
+.admin-content .users-table th:nth-child(8),
+.admin-content .users-table td:nth-child(8) {
+    width: 170px;
+}
+
+.admin-content .users-table td.user-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    overflow: visible;
+}
+
+.admin-content .users-table .btn-edit,
+.admin-content .users-table .btn-secondary,
+.admin-content .users-table .btn-delete {
+    height: 32px;
+    min-width: 44px;
+    padding: 0 10px;
+    font-size: 12px;
+    line-height: 1;
+}
+
+.admin-content .users-table .small-btn {
+    min-width: 48px;
+}
+
+.admin-content .role-badge,
+.admin-content .status-badge-user {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (max-width: 1100px) {
+    .admin-content .users-table-wrap {
+        overflow-x: auto;
+    }
+
+    .admin-content .users-table {
+        min-width: 980px;
+    }
+}
+
+/* =========================
+   ADMIN BOOK TABLE FIT FIX
+   ========================= */
+
+.admin-content .admin-books-section .users-table-wrap {
+    overflow-x: hidden;
+}
+
+.admin-content .admin-books-section .book-table {
+    width: 100%;
+    min-width: 0 !important;
+    table-layout: fixed;
+    font-size: 12px;
+}
+
+.admin-content .admin-books-section .book-table th,
+.admin-content .admin-books-section .book-table td {
+    padding: 8px 9px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.admin-content .admin-books-section .book-table th:nth-child(1),
+.admin-content .admin-books-section .book-table td:nth-child(1) {
+    width: 34px;
+    text-align: center;
+}
+
+.admin-content .admin-books-section .book-table th:nth-child(2),
+.admin-content .admin-books-section .book-table td:nth-child(2) {
+    width: 58px;
+}
+
+.admin-content .admin-books-section .book-table th:nth-child(3),
+.admin-content .admin-books-section .book-table td:nth-child(3) {
+    width: 18%;
+}
+
+.admin-content .admin-books-section .book-table th:nth-child(4),
+.admin-content .admin-books-section .book-table td:nth-child(4) {
+    width: 15%;
+}
+
+.admin-content .admin-books-section .book-table th:nth-child(5),
+.admin-content .admin-books-section .book-table td:nth-child(5) {
+    width: 13%;
+}
+
+.admin-content .admin-books-section .book-table th:nth-child(6),
+.admin-content .admin-books-section .book-table td:nth-child(6) {
+    width: 12%;
+}
+
+.admin-content .admin-books-section .book-table th:nth-child(7),
+.admin-content .admin-books-section .book-table td:nth-child(7),
+.admin-content .admin-books-section .book-table th:nth-child(8),
+.admin-content .admin-books-section .book-table td:nth-child(8) {
+    width: 68px;
+    text-align: center;
+}
+
+.admin-content .admin-books-section .book-table th:nth-child(9),
+.admin-content .admin-books-section .book-table td:nth-child(9) {
+    width: 86px;
+    text-align: center;
+}
+
+.admin-content .admin-books-section .book-table th:nth-child(10),
+.admin-content .admin-books-section .book-table td:nth-child(10) {
+    width: 128px;
+    text-align: center;
+}
+
+.admin-content .admin-books-section .book-thumb {
+    width: 42px !important;
+    height: 58px !important;
+    border-radius: 6px;
+}
+
+.admin-content .admin-books-section .book-count-badge,
+.admin-content .admin-books-section .status-chip {
+    max-width: 100%;
+    min-width: 0;
+    padding: 5px 8px;
+    font-size: 11px;
+}
+
+.admin-content .admin-books-section .btn-edit,
+.admin-content .admin-books-section .btn-delete,
+.admin-content .admin-books-section .btn-secondary,
+.admin-content .admin-books-section .btn-primary {
+    min-width: 0;
+    height: 32px;
+    padding: 0 10px;
+    font-size: 12px;
+    line-height: 1;
+}
+
+.admin-content .admin-books-section td.cat-actions {
+    display: table-cell !important;
+    vertical-align: middle !important;
+    text-align: center !important;
+    white-space: nowrap;
+    overflow: visible;
+}
+
+.admin-content .admin-books-section td.cat-actions form {
+    display: inline-flex !important;
+    margin: 0;
+    vertical-align: middle;
+}
+
+.admin-content .admin-books-section td.cat-actions > .btn-edit,
+.admin-content .admin-books-section td.cat-actions form > .btn-delete {
+    width: 48px;
+    vertical-align: middle;
+}
+
+.admin-content .admin-books-section td.cat-actions > .btn-edit {
+    margin-right: 6px;
+}
+
+@media (max-width: 1180px) {
+    .admin-content .admin-books-section .users-table-wrap {
+        overflow-x: auto;
+    }
+
+    .admin-content .admin-books-section .book-table {
+        min-width: 1040px !important;
+    }
+}

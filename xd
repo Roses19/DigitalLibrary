@@ -1,0 +1,20 @@
+[33mf056f3e[m[33m ([m[1;36mHEAD -> [m[1;32mbackup-current-before-restore-search[m[33m)[m merge branch Pnhu
+[33mbe87818[m[33m ([m[1;31morigin/main[m[33m, [m[1;32mmain[m[33m)[m KAN-45 Phát triển module quản lý mượn sách
+[33m452d684[m Update Search Book+ Home +Intro
+[33mf83034b[m merge full 24/4
+[33m21c45a9[m MergePNhu
+[33m6e49681[m Merge PAnh
+[33m6382ce7[m Fix app startup for user management - sửa khởi chạy module người dùng
+[33m0722850[m Implement user management module - module quản lý người dùng
+[33m8a1d407[m Add seed data for users and books - dữ liệu mẫu người dùng và sách
+[33me0925b6[m Implement admin book management UI - giao diện thêm, xóa, sửa sách cho admin
+[33mfa1b805[m Implement book list UI - giao diện danh sách sách cho người dùng
+[33m8bd59a1[m Implement category management UI - giao diện quản lý danh mục
+[33m6e88fd7[m BE search book
+[33m4cc54c5[m  UI history_borrow
+[33m46f1564[m design UI details books+ reader+ inf
+[33m86d0199[m Fix image book
+[33me8db184[m Update index.py
+[33m5bde20d[m UI admin dashboard
+[33m5225465[m Update quản lý mượn
+[33m3bd8985[m UI quản lý mượn + update login/reigster.html
