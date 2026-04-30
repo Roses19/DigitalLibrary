@@ -1272,6 +1272,57 @@
 
 
 /* =========================================================
+   RECOMMENDATIONS
+   ========================================================= */
+
+.recommendations-page {
+    max-width: 1180px !important;
+}
+
+.recommendation-grid {
+    align-items: start !important;
+}
+
+.recommendation-item {
+    width: 250px;
+}
+
+.recommendation-meta {
+    margin-top: 12px;
+    padding: 14px;
+    border: 1px solid #e1e8ef;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 4px 14px rgba(15, 45, 80, 0.06);
+}
+
+.recommendation-score {
+    color: #123b5d;
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.recommendation-meta p {
+    margin: 0 0 10px;
+    color: #555555;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.prediction-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 7px 10px;
+    border-radius: 999px;
+    background: #e7f7ee;
+    color: #12834c;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+
+/* =========================================================
    RESPONSIVE
    ========================================================= */
 

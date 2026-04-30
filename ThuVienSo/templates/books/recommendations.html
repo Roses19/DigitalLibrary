@@ -1,0 +1,54 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Gợi ý sách - Thư Viện Số{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/books.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="book-list-page recommendations-page">
+    <div class="book-list-header">
+        <h1>Gợi ý sách cho bạn</h1>
+        <p>Dựa trên lịch sử xem, mượn, tìm kiếm và thể loại bạn quan tâm.</p>
+    </div>
+
+    {% if needs_login %}
+        <div class="empty-books">
+            <p>Bạn cần đăng nhập để xem gợi ý sách cá nhân.</p>
+            <a href="{{ url_for('auth.login') }}" class="btn-detail">Đăng nhập</a>
+        </div>
+    {% elif recommendations %}
+        <p class="results-count">Hiển thị <strong>{{ recommendations|length }}</strong> gợi ý phù hợp nhất</p>
+
+        <div class="books-grid recommendation-grid">
+            {% for item in recommendations %}
+                <article class="recommendation-item">
+                    {% with book=item.book %}
+                        {% include "partials/book_card.html" %}
+                    {% endwith %}
+
+                    <div class="recommendation-meta">
+                        <div class="recommendation-score">
+                            Độ phù hợp: <strong>{{ "%.0f"|format((item.score or 0) * 100) }}%</strong>
+                        </div>
+                        <p>{{ item.reason }}</p>
+
+                        {% set prediction = predictions.get(item.book.id) %}
+                        {% if prediction %}
+                            <span class="prediction-chip">
+                                Dự đoán {{ prediction.predicted_borrow_count }} lượt mượn
+                            </span>
+                        {% endif %}
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-books">
+            <p>Chưa có đủ dữ liệu để tạo gợi ý sách cho tài khoản này.</p>
+            <a href="{{ url_for('book.book_list') }}" class="btn-detail">Xem danh sách sách</a>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

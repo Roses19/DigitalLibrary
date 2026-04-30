@@ -14,6 +14,8 @@
                class="{% if request.endpoint == 'home.about' %}nav-active{% endif %}">Giới thiệu</a>
             <a href="{{ url_for('book.book_list') }}"
                class="{% if request.endpoint in ['book.book_list', 'book.detail'] %}nav-active{% endif %}">Danh sách Sách</a>
+            <a href="{{ url_for('book.recommendations') }}"
+               class="{% if request.endpoint == 'book.recommendations' %}nav-active{% endif %}">Gợi ý sách</a>
             <a href="{{ url_for('book.categories') }}"
                class="{% if request.endpoint == 'book.categories' %}nav-active{% endif %}">Thể loại</a>
             <a href="{{ url_for('book.branches') }}"
