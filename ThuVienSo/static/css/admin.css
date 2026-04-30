@@ -44,11 +44,7 @@
 }
 
 /* ===== CONTENT ===== */
-.admin-content {
-    flex: 1;
-    padding: 20px;
-    background: #f5f7fa;
-}
+
 
 /* SECTION */
 .section {
@@ -247,7 +243,7 @@
 /* ===== CONTENT ===== */
 .admin-content {
     flex: 1;
-    padding: 20px;
+    padding: 5px;
     background: #f5f7fa;
 }
 
@@ -519,5 +515,384 @@
 
     .users-table-wrap {
         overflow-x: auto;
+    }
+}
+/* =========================
+   ADMIN LAYOUT + SIDEBAR FIX
+   ========================= */
+
+.admin-layout {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    min-height: calc(100vh - 80px);
+    background: #f3f6fa;
+}
+
+.admin-sidebar {
+    width: 260px;
+    min-width: 260px;
+    background: #17466d;
+    padding: 22px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.admin-sidebar-link {
+    width: 100%;
+    min-height: 56px;
+    border: 1px solid rgba(255, 255, 255, 0.75);
+    background: transparent;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 8px;
+    font-size: 17px;
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+    transition: 0.2s ease;
+    font-family: inherit;
+}
+
+.admin-sidebar-link:hover {
+    background: rgba(255, 255, 255, 0.14);
+}
+
+.admin-sidebar-link.active {
+    background: #ffffff;
+    color: #123b5d;
+}
+
+.admin-sidebar-link.active:hover {
+    background: #ffffff;
+    color: #123b5d;
+}
+
+.sidebar-icon {
+    width: 24px;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.admin-content {
+    flex: 1;
+    padding: 20px 30px;
+    overflow-x: auto;
+}
+
+.section {
+    width: 100%;
+}
+
+.users-page,
+.borrow-page {
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+/* tránh bảng user bị quá sát sidebar */
+.users-table-wrap,
+.borrow-table-wrapper {
+    width: 100%;
+}
+
+/* responsive */
+@media (max-width: 900px) {
+    .admin-layout {
+        flex-direction: column;
+    }
+
+    .admin-sidebar {
+        width: 100%;
+        min-width: 100%;
+        flex-direction: row;
+        overflow-x: auto;
+        padding: 12px;
+    }
+
+    .admin-sidebar-link {
+        width: auto;
+        min-width: 180px;
+        white-space: nowrap;
+    }
+
+    .admin-content {
+        padding: 30px 20px;
+    }
+}
+/* =========================
+   ADMIN CONTENT SPACING FIX
+   ========================= */
+
+.admin-content {
+    flex: 1;
+    padding: 24px 17px 24px 17px !important;
+    overflow-x: auto;
+}
+
+.admin-content .book-list-page,
+.admin-content .users-page,
+.admin-content .borrow-page {
+    width: 100%;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.admin-content .admin-list-header,
+.admin-content .users-header,
+.admin-content .borrow-header {
+    width: 100%;
+}
+
+.admin-content .book-table-wrap,
+.admin-content .users-table-wrap,
+.admin-content .borrow-table-wrapper {
+    width: 100%;
+}
+
+/* Cho bảng sách rộng hơn trong vùng bên phải sidebar */
+.admin-content .book-table {
+    min-width: 1120px;
+}
+
+/* =========================
+   ADMIN USERS TABLE FIT FIX
+   ========================= */
+
+.admin-content .users-table-wrap {
+    overflow-x: hidden;
+}
+
+.admin-content .users-table {
+    width: 100%;
+    min-width: 0;
+    table-layout: fixed;
+    font-size: 13px;
+}
+
+.admin-content .users-table th,
+.admin-content .users-table td {
+    padding: 10px 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.admin-content .users-table th:nth-child(1),
+.admin-content .users-table td:nth-child(1) {
+    width: 42px;
+    text-align: center;
+}
+
+.admin-content .users-table th:nth-child(2),
+.admin-content .users-table td:nth-child(2) {
+    width: 15%;
+}
+
+.admin-content .users-table th:nth-child(3),
+.admin-content .users-table td:nth-child(3) {
+    width: 12%;
+}
+
+.admin-content .users-table th:nth-child(4),
+.admin-content .users-table td:nth-child(4) {
+    width: 20%;
+}
+
+.admin-content .users-table th:nth-child(5),
+.admin-content .users-table td:nth-child(5) {
+    width: 11%;
+}
+
+.admin-content .users-table th:nth-child(6),
+.admin-content .users-table td:nth-child(6) {
+    width: 11%;
+}
+
+.admin-content .users-table th:nth-child(7),
+.admin-content .users-table td:nth-child(7) {
+    width: 11%;
+}
+
+.admin-content .users-table th:nth-child(8),
+.admin-content .users-table td:nth-child(8) {
+    width: 170px;
+}
+
+.admin-content .users-table td.user-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    overflow: visible;
+}
+
+.admin-content .users-table .btn-edit,
+.admin-content .users-table .btn-secondary,
+.admin-content .users-table .btn-delete {
+    height: 32px;
+    min-width: 44px;
+    padding: 0 10px;
+    font-size: 12px;
+    line-height: 1;
+}
+
+.admin-content .users-table .small-btn {
+    min-width: 48px;
+}
+
+.admin-content .role-badge,
+.admin-content .status-badge-user {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (max-width: 1100px) {
+    .admin-content .users-table-wrap {
+        overflow-x: auto;
+    }
+
+    .admin-content .users-table {
+        min-width: 980px;
+    }
+}
+
+/* =========================
+   ADMIN BOOK TABLE FIT FIX
+   ========================= */
+
+.admin-content .admin-books-section .users-table-wrap {
+    overflow-x: hidden;
+}
+
+.admin-content .admin-books-section .book-table {
+    width: 100%;
+    min-width: 0 !important;
+    table-layout: fixed;
+    font-size: 12px;
+}
+
+.admin-content .admin-books-section .book-table th,
+.admin-content .admin-books-section .book-table td {
+    padding: 8px 9px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.admin-content .admin-books-section .book-table th:nth-child(1),
+.admin-content .admin-books-section .book-table td:nth-child(1) {
+    width: 34px;
+    text-align: center;
+}
+
+.admin-content .admin-books-section .book-table th:nth-child(2),
+.admin-content .admin-books-section .book-table td:nth-child(2) {
+    width: 58px;
+}
+
+.admin-content .admin-books-section .book-table th:nth-child(3),
+.admin-content .admin-books-section .book-table td:nth-child(3) {
+    width: 18%;
+}
+
+.admin-content .admin-books-section .book-table th:nth-child(4),
+.admin-content .admin-books-section .book-table td:nth-child(4) {
+    width: 15%;
+}
+
+.admin-content .admin-books-section .book-table th:nth-child(5),
+.admin-content .admin-books-section .book-table td:nth-child(5) {
+    width: 13%;
+}
+
+.admin-content .admin-books-section .book-table th:nth-child(6),
+.admin-content .admin-books-section .book-table td:nth-child(6) {
+    width: 12%;
+}
+
+.admin-content .admin-books-section .book-table th:nth-child(7),
+.admin-content .admin-books-section .book-table td:nth-child(7),
+.admin-content .admin-books-section .book-table th:nth-child(8),
+.admin-content .admin-books-section .book-table td:nth-child(8) {
+    width: 68px;
+    text-align: center;
+}
+
+.admin-content .admin-books-section .book-table th:nth-child(9),
+.admin-content .admin-books-section .book-table td:nth-child(9) {
+    width: 86px;
+    text-align: center;
+}
+
+.admin-content .admin-books-section .book-table th:nth-child(10),
+.admin-content .admin-books-section .book-table td:nth-child(10) {
+    width: 128px;
+    text-align: center;
+}
+
+.admin-content .admin-books-section .book-thumb {
+    width: 42px !important;
+    height: 58px !important;
+    border-radius: 6px;
+}
+
+.admin-content .admin-books-section .book-count-badge,
+.admin-content .admin-books-section .status-chip {
+    max-width: 100%;
+    min-width: 0;
+    padding: 5px 8px;
+    font-size: 11px;
+}
+
+.admin-content .admin-books-section .btn-edit,
+.admin-content .admin-books-section .btn-delete,
+.admin-content .admin-books-section .btn-secondary,
+.admin-content .admin-books-section .btn-primary {
+    min-width: 0;
+    height: 32px;
+    padding: 0 10px;
+    font-size: 12px;
+    line-height: 1;
+}
+
+.admin-content .admin-books-section td.cat-actions {
+    display: table-cell !important;
+    vertical-align: middle !important;
+    text-align: center !important;
+    white-space: nowrap;
+    overflow: visible;
+}
+
+.admin-content .admin-books-section td.cat-actions form {
+    display: inline-flex !important;
+    margin: 0;
+    vertical-align: middle;
+}
+
+.admin-content .admin-books-section td.cat-actions > .btn-edit,
+.admin-content .admin-books-section td.cat-actions form > .btn-delete {
+    width: 48px;
+    vertical-align: middle;
+}
+
+.admin-content .admin-books-section td.cat-actions > .btn-edit {
+    margin-right: 6px;
+}
+
+@media (max-width: 1180px) {
+    .admin-content .admin-books-section .users-table-wrap {
+        overflow-x: auto;
+    }
+
+    .admin-content .admin-books-section .book-table {
+        min-width: 1040px !important;
     }
 }

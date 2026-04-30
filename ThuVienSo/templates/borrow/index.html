@@ -1,0 +1,120 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Quản lý yêu cầu mượn - Thư Viện Số{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/borrow.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="borrow-page">
+    <div class="borrow-header">
+        <h1>Quản lý yêu cầu mượn sách</h1>
+        <p>Duyệt hoặc từ chối yêu cầu mượn sách của độc giả.</p>
+    </div>
+
+    <div class="borrow-filter">
+        <a href="{{ url_for('borrow.admin_list') }}"
+           class="{% if not selected_status %}active{% endif %}">
+            Tất cả
+        </a>
+
+        <a href="{{ url_for('borrow.admin_list', status='pending') }}"
+           class="{% if selected_status == 'pending' %}active{% endif %}">
+            Chờ duyệt
+        </a>
+
+        <a href="{{ url_for('borrow.admin_list', status='approved') }}"
+           class="{% if selected_status == 'approved' %}active{% endif %}">
+            Đã duyệt
+        </a>
+
+        <a href="{{ url_for('borrow.admin_list', status='rejected') }}"
+           class="{% if selected_status == 'rejected' %}active{% endif %}">
+            Từ chối
+        </a>
+
+        <a href="{{ url_for('borrow.admin_records') }}">
+            Phiếu mượn
+        </a>
+    </div>
+
+    {% if borrow_requests %}
+        <div class="borrow-table-wrapper">
+            <table class="borrow-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Độc giả</th>
+                        <th>Sách yêu cầu</th>
+                        <th>Ngày yêu cầu</th>
+                        <th>Trạng thái</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for req in borrow_requests %}
+                        <tr>
+                            <td>#{{ req.id }}</td>
+
+                            <td>
+                                <strong>{{ req.user.username }}</strong>
+                            </td>
+
+                            <td>
+                                {% for item in req.items %}
+                                    <div class="borrow-book-info">
+                                        <strong>{{ item.book.title }}</strong>
+                                        <span>
+                                            SL yêu cầu: {{ item.quantity }}
+                                            |
+                                            Còn: {{ item.book.available_quantity or 0 }}
+                                        </span>
+                                    </div>
+                                {% endfor %}
+                            </td>
+
+                            <td>
+                                {{ req.request_date.strftime("%d/%m/%Y %H:%M") if req.request_date else "-" }}
+                            </td>
+
+                            <td>
+                                <span class="borrow-status {{ req.status }}">
+                                    {{ get_request_status_label(req.status) }}
+                                </span>
+                            </td>
+
+                            <td>
+                                <div class="borrow-actions">
+                                    {% if req.status == "pending" %}
+                                        <form method="POST"
+                                              action="{{ url_for('borrow.approve', borrow_id=req.id) }}">
+                                            <button type="submit" class="btn-approve">
+                                                Duyệt
+                                            </button>
+                                        </form>
+
+                                        <form method="POST"
+                                              action="{{ url_for('borrow.reject', borrow_id=req.id) }}">
+                                            <button type="submit" class="btn-reject">
+                                                Từ chối
+                                            </button>
+                                        </form>
+                                    {% else %}
+                                        <span class="no-action">Không có</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="borrow-empty">
+            <p>Không có yêu cầu mượn sách nào.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

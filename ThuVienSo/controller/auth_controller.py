@@ -59,7 +59,7 @@ def login_controller():
 
             session['role'] = user.role.name
             if user.role.name == 'Quản trị':
-                return redirect(url_for('admin_bp.admin_dashboard'))
+                return redirect(url_for('admin_bp.dashboard'))
             elif user.role.name == 'Thủ thư':
                 return redirect(url_for('staff_page'))
             else:

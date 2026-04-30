@@ -1,0 +1,46 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Các chi nhánh thư viện - Thư Viện Số{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/books.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="branches-page">
+    <div class="book-list-header">
+        <h1>Các chi nhánh thư viện</h1>
+        <p class="book-list-subtitle">Theo dõi số lượng sách đang lưu trữ tại từng chi nhánh.</p>
+    </div>
+
+    {% if branches %}
+        <div class="branches-grid">
+            {% for branch in branches %}
+                <article class="branch-card">
+                    <h2>{{ branch.name }}</h2>
+                    <p class="branch-address">{{ branch.address or "Chưa cập nhật địa chỉ" }}</p>
+
+                    <div class="branch-stats">
+                        <div>
+                            <span>Số đầu sách</span>
+                            <strong>{{ branch.book_count }}</strong>
+                        </div>
+                        <div>
+                            <span>Tổng bản sách</span>
+                            <strong>{{ branch.total_quantity }}</strong>
+                        </div>
+                        <div>
+                            <span>Còn có thể mượn</span>
+                            <strong>{{ branch.available_quantity }}</strong>
+                        </div>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="no-results">
+            <p>Chưa có chi nhánh thư viện nào.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

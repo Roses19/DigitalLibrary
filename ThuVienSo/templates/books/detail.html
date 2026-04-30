@@ -18,15 +18,14 @@
                 {% if book.cover_image %}
                     <img src="{{ book.cover_image }}" alt="{{ book.title }}">
                 {% else %}
-                    <img src="{{ url_for('static', filename='images/books/default-book.png') }}">
+                    <img src="{{ url_for('static', filename='images/books/default-book.png') }}"
+                         alt="{{ book.title }}">
                 {% endif %}
             </div>
 
             <!-- INFO -->
             <div class="book-detail-info">
                 <h1>{{ book.title }}</h1>
-
-
 
                 <table class="book-info-table">
                     <tr>
@@ -36,7 +35,13 @@
 
                     <tr>
                         <td>Tác giả</td>
-                        <td>{{ book.authors | map(attribute='name') | join(', ') }}</td>
+                        <td>
+                            {% if book.authors %}
+                                {{ book.authors | map(attribute='name') | join(', ') }}
+                            {% else %}
+                                Chưa rõ tác giả
+                            {% endif %}
+                        </td>
                     </tr>
 
                     <tr>
@@ -70,7 +75,7 @@
                     </tr>
                 </table>
 
-                <!-- 🔥 CHI NHÁNH + KỆ + SỐ LƯỢNG -->
+                <!-- CHI NHÁNH + KỆ + SỐ LƯỢNG -->
                 <div class="book-copies-section">
                     <h3>Thông tin lưu trữ</h3>
 
@@ -83,47 +88,60 @@
 
                         {% for copy in book.copies %}
                         <tr>
-                            <td>{{ copy.branch.name if copy.branch else '-' }}</td>
-                            <td>{{ copy.shelf_location or '-' }}</td>
                             <td>
-    {% if copy.available_quantity > 0 %}
-        <span class="status-badge available">
-            {{ copy.available_quantity }}/{{ copy.total_quantity }}
-        </span>
+                                {{ copy.branch.name if copy.branch else '-' }}
+                            </td>
 
-        <!-- ✅ NÚT MƯỢN THEO CHI NHÁNH -->
-        <a href="#"
-           class="detail-tab borrow">
-            Mượn
-        </a>
+                            <td>
+                                {{ copy.shelf_location or '-' }}
+                            </td>
 
-    {% else %}
-        <span class="status-badge unavailable">
-            Hết
-        </span>
-    {% endif %}
-</td>
+                            <td>
+                                {% if (copy.available_quantity or 0) > 0 %}
+                                    <span class="status-badge available">
+                                        Còn {{ copy.available_quantity }} cuốn
+                                    </span>
+
+                                    <!-- MƯỢN SÁCH THEO ĐÚNG CHI NHÁNH -->
+                                    <form action="{{ url_for('borrow.borrow_form', book_id=book.id, branch_id=copy.branch_id) }}"
+                                          method="get"
+                                          class="borrow-form detail-borrow-form">
+
+                                        <input type="hidden"
+                                               name="branch_id"
+                                               value="{{ copy.branch_id }}">
+
+                                        <button type="submit"
+                                                class="detail-tab borrow btn-borrow">
+                                            Mượn sách
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <span class="status-badge unavailable">
+                                        Hết
+                                    </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="3">
+                                Chưa có thông tin lưu trữ cho sách này.
+                            </td>
                         </tr>
                         {% endfor %}
                     </table>
                 </div>
 
+                <!-- TỔNG SỐ LƯỢNG -->
+                <div class="book-summary">
 
-
-              <div class="book-summary">
-    <strong>Tổng:</strong>
-
-    {% if available > 0 %}
-        <span class="status-badge available">
-            Còn {{ available }}/{{ total }} cuốn
-        </span>
-
-    {% else %}
-        <span class="status-badge unavailable">
-            Đã hết sách
-        </span>
-    {% endif %}
-</div>
+                    {% if available <= 0 %}
+                        <span class="status-badge unavailable">
+                            Đã hết sách
+                        </span>
+                    {% endif %}
+                </div>
 
                 <!-- DESCRIPTION -->
                 <div class="book-description">
@@ -132,7 +150,7 @@
                 </div>
 
                 <div class="book-detail-footer">
-                    <a href="{{ url_for('book.search') }}" class="btn-back">
+                    <a href="{{ url_for('book.book_list') }}" class="btn-back">
                         Quay lại danh sách
                     </a>
                 </div>
@@ -142,6 +160,7 @@
     {% else %}
         <div class="not-found">
             <p>Không tìm thấy sách này.</p>
+
             <a href="{{ url_for('home.index') }}" class="btn-back">
                 Quay lại trang chủ
             </a>

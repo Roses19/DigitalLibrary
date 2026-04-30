@@ -1,41 +1,90 @@
 <div class="book-card">
 
-    {% set total = book.copies | sum(attribute='total_quantity') %}
-    {% set available = book.copies | sum(attribute='available_quantity') %}
+    <a href="{{ url_for('book.detail', book_id=book.id) }}" class="book-cover-link">
 
-    <div class="book-cover-wrapper">
-
-{% if book.cover_image %}
-        <img src="{{ book.cover_image }}" alt="{{ book.title }}" class="book-card-cover">
-        {% else %} <img src="{{ url_for('static', filename='images/books/default-book.png') }}"
-                        alt="{{ book.title }}" class="book-card-cover"> {% endif %}
-        <span class="book-status-badge {{ 'available' if available > 0 else 'unavailable' }}">
-            {% if available > 0 %}
-                Còn {{ available }}/{{ total }}
-            {% else %}
+        {% if (book.available_quantity or 0) > 0 %}
+            <span class="book-status status-on-cover available">
+                Còn sách
+            </span>
+        {% else %}
+            <span class="book-status status-on-cover unavailable">
                 Đã hết
+            </span>
+        {% endif %}
+
+        {% if book.cover_image %}
+            <img src="{{ book.cover_image }}"
+                 alt="{{ book.title }}"
+                 class="book-cover">
+        {% else %}
+            <img src="{{ url_for('static', filename='images/books/default-book.png') }}"
+                 alt="{{ book.title }}"
+                 class="book-cover">
+        {% endif %}
+    </a>
+
+    <div class="book-info">
+
+        <h3 class="book-title">
+            <a href="{{ url_for('book.detail', book_id=book.id) }}">
+                {{ book.title }}
+            </a>
+        </h3>
+
+        <p class="book-author">
+            {% if book.authors %}
+                {{ book.authors | map(attribute='name') | join(', ') }}
+            {% else %}
+                Chưa rõ tác giả
             {% endif %}
-        </span>
-    </div>
-
-    <div class="book-card-info">
-        <h3 class="book-card-title">{{ book.title }}</h3>
-
-        <p class="book-card-author">
-            {{ book.authors | map(attribute='name') | join(', ') or 'Chưa có tác giả' }}
         </p>
 
-        <div class="book-card-actions">
+        <p class="book-meta">
+            {% if book.category %}
+                {{ book.category.name }}
+            {% else %}
+                Chưa phân loại
+            {% endif %}
+        </p>
+
+        <div class="book-actions">
 
             <a href="{{ url_for('book.detail', book_id=book.id) }}"
                class="btn-detail">
                 Xem chi tiết
             </a>
 
-<!--            <a href="#"-->
-<!--               class="btn-borrow {{ 'disabled' if available <= 0 else '' }}">-->
-<!--                Mượn sách-->
-<!--            </a>-->
+            {% set borrow_state = user_borrow_states.get(book.id) if user_borrow_states is defined and user_borrow_states else None %}
+
+            {% if (book.available_quantity or 0) > 0 %}
+
+                {% if borrow_state and borrow_state.status == 'pending' %}
+                    <a href="{{ url_for('borrow.edit_form', borrow_id=borrow_state.request_id) }}"
+                       class="btn-borrow">
+                        Sửa phiếu mượn
+                    </a>
+
+                {% elif borrow_state == 'pending' %}
+                    <a href="{{ url_for('borrow.borrow_form', book_id=book.id) }}"
+                       class="btn-borrow">
+                        Sửa phiếu mượn
+                    </a>
+
+                {% else %}
+                    <form action="{{ url_for('borrow.borrow_form', book_id=book.id) }}"
+                          method="get"
+                          class="borrow-form">
+                        <button type="submit" class="btn-borrow">
+                            Mượn sách
+                        </button>
+                    </form>
+                {% endif %}
+
+            {% else %}
+                <button type="button" class="btn-borrow disabled" disabled>
+                    Hết sách
+                </button>
+            {% endif %}
 
         </div>
     </div>

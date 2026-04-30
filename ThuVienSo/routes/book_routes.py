@@ -6,9 +6,10 @@ from ThuVienSo.controller.book_controller import (
     get_categories,
     create_category,
     update_category,
-    delete_category, get_book_list, get_admin_book_list, create_book, update_book, delete_book, update_book_copy,
+    delete_category, get_book_list, get_admin_book_list, get_branches, create_book, update_book, delete_book, update_book_copy,
     create_book_copy
 )
+from ThuVienSo.controller.recommendation_controller import get_recommendations
 
 
 book_bp = Blueprint("book", __name__, url_prefix="/books")
@@ -31,6 +32,16 @@ def detail(book_id):
 @book_bp.route("/categories")
 def categories():
     return get_categories()
+
+
+@book_bp.route("/branches")
+def branches():
+    return get_branches()
+
+
+@book_bp.route("/recommendations")
+def recommendations():
+    return get_recommendations()
 
 
 @book_bp.route("/categories/create", methods=["POST"])

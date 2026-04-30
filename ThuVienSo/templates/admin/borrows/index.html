@@ -1,0 +1,169 @@
+{% block content %}
+<div class="borrow-page">
+    <div class="borrow-header">
+        <p>Duyệt hoặc từ chối yêu cầu mượn sách của độc giả.</p>
+    </div>
+
+    <div class="borrow-filter">
+        <button type="button"
+                class="{% if not selected_status and selected_view != 'records' %}active{% endif %}"
+                onclick="window.location.href='/admin?tab=borrow'">
+            Tất cả
+        </button>
+
+        <button type="button"
+                class="{% if selected_status == 'pending' %}active{% endif %}"
+                onclick="window.location.href='/admin?tab=borrow&status=pending'">
+            Chờ duyệt
+        </button>
+
+        <button type="button"
+                class="{% if selected_status == 'approved' %}active{% endif %}"
+                onclick="window.location.href='/admin?tab=borrow&status=approved'">
+            Đã duyệt
+        </button>
+
+        <button type="button"
+                class="{% if selected_status == 'rejected' %}active{% endif %}"
+                onclick="window.location.href='/admin?tab=borrow&status=rejected'">
+            Từ chối
+        </button>
+
+        <button type="button"
+                class="{% if selected_view == 'records' %}active{% endif %}"
+                onclick="window.location.href='/admin?tab=borrow&view=records'">
+            Phiếu mượn
+        </button>
+    </div>
+
+    {% if borrow_requests %}
+        <div class="borrow-table-wrapper">
+            <table class="borrow-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Độc giả</th>
+                        <th>Sách yêu cầu</th>
+                        <th>Ngày yêu cầu</th>
+                        <th>Trạng thái</th>
+                        <th>Lý do từ chối</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for req in borrow_requests %}
+                        <tr>
+                            <td>#{{ req.id }}</td>
+
+                            <td>
+                                <strong>{{ req.user.username if req.user else "Không rõ" }}</strong>
+                            </td>
+
+                            <td>
+                                {% if req.items %}
+                                    {% for item in req.items %}
+                                        <div class="borrow-book-info">
+                                            <strong>{{ item.book.title if item.book else "Không rõ sách" }}</strong>
+                                            <span>
+                                                Chi nhánh: {{ get_borrow_item_branch_name(item) if get_borrow_item_branch_name is defined else (item.book_copy.branch.name if item.book_copy and item.book_copy.branch else "Chưa chọn") }}
+                                                |
+                                                SL yêu cầu: {{ item.quantity }}
+                                                |
+                                                Còn: {{ item.book_copy.available_quantity if item.book_copy else (item.book.available if item.book else 0) }}
+                                            </span>
+                                        </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <span>Không có sách</span>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {{ req.request_date.strftime("%d/%m/%Y %H:%M") if req.request_date else "-" }}
+                            </td>
+
+                            <td>
+                                <span class="borrow-status {{ req.status }}">
+                                    {{ get_request_status_label(req.status) }}
+                                </span>
+                            </td>
+
+                            <td>
+                                {{ req.reject_reason or "-" }}
+                            </td>
+
+                            <td>
+                                {% if req.status == "pending" %}
+                                    <div class="borrow-actions">
+                                        <form method="POST"
+                                              action="{{ url_for('borrow.approve', borrow_id=req.id) }}">
+                                            <input type="hidden"
+                                                   name="next_url"
+                                                   value="/admin?tab=borrow{% if selected_status %}&status={{ selected_status }}{% endif %}">
+
+                                            <button type="submit" class="btn-approve">
+                                                Duyệt
+                                            </button>
+                                        </form>
+
+                                        <button type="button"
+                                                class="btn-reject js-open-reject-modal"
+                                                data-action="{{ url_for('borrow.reject', borrow_id=req.id) }}"
+                                                data-next-url="/admin?tab=borrow{% if selected_status %}&status={{ selected_status }}{% endif %}"
+                                                data-request-id="{{ req.id }}">
+                                            Từ chối
+                                        </button>
+                                    </div>
+                                {% else %}
+                                    <span class="no-action"></span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="borrow-empty">
+            <p>Không có yêu cầu mượn sách nào.</p>
+        </div>
+    {% endif %}
+</div>
+
+<div class="custom-modal-overlay" id="rejectBorrowModal">
+    <div class="custom-modal">
+        <div class="custom-modal-icon">!</div>
+
+        <h3>Từ chối yêu cầu mượn</h3>
+
+        <p id="rejectBorrowMessage">
+            Nhập lý do từ chối yêu cầu mượn sách.
+        </p>
+
+        <form method="POST" id="rejectBorrowForm">
+            <input type="hidden" name="next_url" id="rejectNextUrl" value="/admin?tab=borrow">
+
+            <div class="modal-form-group">
+                <textarea name="reject_reason"
+                          id="rejectReason"
+                          rows="4"
+                          placeholder="Ví dụ: Sách hiện không đủ số lượng hoặc chưa thể cho mượn..."
+                          required></textarea>
+            </div>
+
+            <div class="custom-modal-actions">
+                <button type="button" class="btn-modal-cancel" id="cancelRejectBorrow">
+                    Hủy
+                </button>
+
+                <button type="submit" class="btn-modal-confirm">
+                    Từ chối
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/admin_borrow.js') }}"></script>
+{% endblock %}
