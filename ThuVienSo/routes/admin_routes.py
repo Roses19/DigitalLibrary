@@ -64,7 +64,6 @@ def manage_rules():
 
         rule.max_books_per_borrow = int(request.form.get('max_books_per_borrow'))
         rule.max_borrow_days = int(request.form.get('max_borrow_days'))
-        rule.max_extend_times = int(request.form.get('max_extend_times'))
 
         db.session.commit()
         flash("Cập nhật quy định thành công!", "success")
