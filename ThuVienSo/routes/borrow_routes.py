@@ -11,7 +11,10 @@ from ThuVienSo.controller.borrow_controller import (
     return_borrow_record,
     show_edit_borrow_request_form,
     update_borrow_request,
-    delete_borrow_request
+    delete_borrow_request,
+    borrow_manage_controller,
+    borrow_lookup_controller,
+    return_book_controller,
 )
 
 
@@ -77,3 +80,19 @@ def admin_records():
 @borrow_bp.route("/admin/records/<int:record_id>/return", methods=["POST"])
 def return_record(record_id):
     return return_borrow_record(record_id)
+
+
+# ================== THỦ THƯ: QUẢN LÝ / TRA CỨU / TRẢ SÁCH ==================
+@borrow_bp.route("/manage")
+def manage():
+    return borrow_manage_controller()
+
+
+@borrow_bp.route("/lookup")
+def lookup():
+    return borrow_lookup_controller()
+
+
+@borrow_bp.route("/return/<int:record_id>", methods=["POST"])
+def return_book(record_id):
+    return return_book_controller(record_id)

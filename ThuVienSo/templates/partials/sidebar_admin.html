@@ -13,6 +13,12 @@
         <span class="sidebar-icon">👤</span>
         <span>Quản lý người dùng</span>
     </button>
+    <button type="button"
+            class="admin-sidebar-link {% if active_tab|default('users') == 'borrow_lookup' %}active{% endif %}"
+            onclick="window.location.href='{{ url_for('borrow.lookup') }}'">
+        <span class="sidebar-icon">🔍</span>
+        <span>Tra cứu lịch sử</span>
+    </button>
 
     <button type="button"
             class="admin-sidebar-link {% if active_tab|default('users') == 'borrow' %}active{% endif %}"

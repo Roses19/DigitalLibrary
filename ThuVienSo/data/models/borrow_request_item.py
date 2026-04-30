@@ -31,6 +31,12 @@ class BorrowRequestItem(db.Model):
         back_populates="items"
     )
 
-    book = db.relationship("Book")
+    book = db.relationship(
+        "Book",
+        backref="borrow_request_items"
+    )
 
     book_copy = db.relationship("BookCopy")
+
+    def __repr__(self):
+        return f"<BorrowRequestItem req={self.borrow_request_id} book={self.book_id}>"

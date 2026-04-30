@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 
 from flask import render_template, redirect, url_for, flash, session, request
 from sqlalchemy.orm import joinedload
+from sqlalchemy import text
 
 from ThuVienSo import db
 from ThuVienSo.data.models.book import Book
@@ -12,13 +13,14 @@ from ThuVienSo.data.models.borrow_request_item import BorrowRequestItem
 from ThuVienSo.data.models.borrow_record import BorrowRecord
 from ThuVienSo.data.models.borrow_record_item import BorrowRecordItem
 
+try:
+    from ThuVienSo.data.models.return_record import ReturnRecord
+except Exception:
+    ReturnRecord = None
+
 
 # ================== HELPER ==================
 def get_current_user():
-    """
-    Lấy user đang đăng nhập.
-    Ưu tiên user_id. Nếu session cũ chưa có user_id thì fallback theo username.
-    """
     user_id = session.get("user_id")
 
     if user_id:
@@ -46,14 +48,6 @@ def normalize_role_name(role_name):
 
 
 def is_admin_or_librarian():
-    """
-    Cho phép:
-    - admin
-    - quản trị
-    - quản trị viên
-    - thủ thư
-    - librarian
-    """
     current_user = get_current_user()
 
     if not current_user:
@@ -78,16 +72,6 @@ def is_admin_or_librarian():
     return role_name in allowed_roles
 
 
-def get_admin_borrow_url(status=None, view=None):
-    if view:
-        return f"/admin?tab=borrow&view={view}"
-
-    if status:
-        return f"/admin?tab=borrow&status={status}"
-
-    return "/admin?tab=borrow"
-
-
 def get_next_url(default="/admin?tab=borrow"):
     return request.form.get("next_url") or request.args.get("next_url") or default
 
@@ -98,7 +82,6 @@ def get_request_status_label(status):
         "approved": "Đã duyệt",
         "rejected": "Đã từ chối",
     }
-
     return labels.get(status, status)
 
 
@@ -107,21 +90,14 @@ def get_record_status_label(status):
         "borrowing": "Đang mượn",
         "returned": "Đã trả",
     }
-
     return labels.get(status, status)
 
 
 # ================== BOOK QUANTITY HELPER ==================
 def get_book_with_copies(book_id):
-    """
-    Lấy sách kèm các bản lưu trữ ở chi nhánh.
-    joinedload thêm branch để template lấy copy.branch.name.
-    """
     return (
         Book.query
-        .options(
-            joinedload(Book.copies).joinedload(BookCopy.branch)
-        )
+        .options(joinedload(Book.copies).joinedload(BookCopy.branch))
         .get(book_id)
     )
 
@@ -130,30 +106,17 @@ def get_book_total_quantity(book):
     if not book or not getattr(book, "copies", None):
         return 0
 
-    return sum(
-        (copy.total_quantity or 0)
-        for copy in book.copies
-    )
+    return sum((copy.total_quantity or 0) for copy in book.copies)
 
 
 def get_book_available_quantity(book):
-    """
-    Tổng số lượng còn của sách ở tất cả chi nhánh.
-    """
     if not book or not getattr(book, "copies", None):
         return 0
 
-    return sum(
-        (copy.available_quantity or 0)
-        for copy in book.copies
-    )
+    return sum((copy.available_quantity or 0) for copy in book.copies)
 
 
 def get_available_copies(book):
-    """
-    Lấy danh sách chi nhánh còn sách.
-    Query trực tiếp từ BookCopy để tránh lỗi book.copies chưa load đủ dữ liệu.
-    """
     if not book:
         return []
 
@@ -170,15 +133,9 @@ def get_available_copies(book):
 
 
 def get_copy_by_branch(book, branch_id):
-    """
-    Lấy BookCopy theo sách + chi nhánh.
-    """
     branch_id = safe_int(branch_id, 0)
 
-    if branch_id <= 0:
-        return None
-
-    if not book:
+    if branch_id <= 0 or not book:
         return None
 
     return (
@@ -193,10 +150,6 @@ def get_copy_by_branch(book, branch_id):
 
 
 def attach_book_quantity(book):
-    """
-    Gắn số lượng tạm để template có thể dùng book.available_quantity nếu cần.
-    Đây chỉ là attribute trong request hiện tại, không phụ thuộc cột DB.
-    """
     if not book:
         return None
 
@@ -220,21 +173,11 @@ def attach_book_quantity(book):
 
 
 def get_branch_id_from_request():
-    """
-    branch_id có thể đến từ:
-    - query string: ?branch_id=...
-    - hidden input trong form
-    - select trong form
-    """
     branch_id = request.form.get("branch_id") or request.args.get("branch_id")
     return safe_int(branch_id, 0)
 
 
 def get_selected_book_copy_from_item(item):
-    """
-    Lấy BookCopy đã lưu trong BorrowRequestItem nếu có.
-    Ưu tiên book_copy_id vì đây là khóa chính xác nhất.
-    """
     if not item:
         return None
 
@@ -263,10 +206,6 @@ def get_selected_book_copy_from_item(item):
 
 
 def get_selected_branch_id_from_item(item):
-    """
-    Lấy branch_id từ BorrowRequestItem.
-    Ưu tiên book_copy_id vì đây là dữ liệu chính xác nhất.
-    """
     selected_copy = get_selected_book_copy_from_item(item)
 
     if selected_copy:
@@ -279,10 +218,6 @@ def get_selected_branch_id_from_item(item):
 
 
 def assign_branch_to_item(item, branch_id, selected_copy=None):
-    """
-    Lưu chi nhánh mượn vào BorrowRequestItem.
-    Ưu tiên lưu book_copy_id vì BookCopy chứa đúng sách + chi nhánh + kệ + số lượng.
-    """
     if not item:
         return
 
@@ -294,9 +229,6 @@ def assign_branch_to_item(item, branch_id, selected_copy=None):
 
 
 def assign_branch_to_record_item(record_item, branch_id, selected_copy=None):
-    """
-    Lưu chi nhánh vào BorrowRecordItem sau khi duyệt phiếu.
-    """
     if not record_item:
         return
 
@@ -308,12 +240,6 @@ def assign_branch_to_record_item(record_item, branch_id, selected_copy=None):
 
 
 def get_borrow_item_branch_name(item):
-    """
-    Lấy tên chi nhánh của một dòng yêu cầu mượn.
-    Hỗ trợ:
-    - item.book_copy_id
-    - item.branch_id
-    """
     if not item:
         return "Chưa chọn chi nhánh"
 
@@ -346,9 +272,6 @@ def get_record_item_branch_name(item):
 
 
 def validate_borrow_selection(book, branch_id, quantity):
-    """
-    Kiểm tra chi nhánh + số lượng mượn.
-    """
     if not book:
         return None, "Không tìm thấy sách."
 
@@ -378,11 +301,6 @@ def validate_borrow_selection(book, branch_id, quantity):
 
 
 def decrease_book_copy_quantity(book, quantity, branch_id=None):
-    """
-    Khi duyệt phiếu mượn:
-    - Nếu có branch_id: trừ đúng chi nhánh đã chọn.
-    - Nếu không có branch_id: fallback trừ từ các chi nhánh còn sách.
-    """
     if not book:
         return False
 
@@ -413,11 +331,7 @@ def decrease_book_copy_quantity(book, quantity, branch_id=None):
         return False
 
     remaining = quantity
-
-    copies = sorted(
-        list(book.copies or []),
-        key=lambda copy: copy.id
-    )
+    copies = sorted(list(book.copies or []), key=lambda copy: copy.id)
 
     for copy in copies:
         if remaining <= 0:
@@ -436,11 +350,6 @@ def decrease_book_copy_quantity(book, quantity, branch_id=None):
 
 
 def increase_book_copy_quantity(book, quantity, branch_id=None):
-    """
-    Khi trả sách:
-    - Nếu có branch_id: cộng lại đúng chi nhánh đã mượn.
-    - Nếu không có branch_id: fallback cộng vào các chi nhánh còn thiếu.
-    """
     if not book:
         return False
 
@@ -460,10 +369,7 @@ def increase_book_copy_quantity(book, quantity, branch_id=None):
         selected_copy.available_quantity = (selected_copy.available_quantity or 0) + quantity
         return True
 
-    copies = sorted(
-        list(book.copies or []),
-        key=lambda copy: copy.id
-    )
+    copies = sorted(list(book.copies or []), key=lambda copy: copy.id)
 
     if not copies:
         return False
@@ -597,6 +503,7 @@ def show_borrow_form(book_id):
                 "Nếu muốn đổi chi nhánh, vui lòng sửa phiếu mượn hiện có.",
                 "warning"
             )
+
             existing_copy = get_copy_by_branch(book, existing_branch_id)
             requested_copy = get_copy_by_branch(book, selected_branch_id)
 
@@ -772,6 +679,10 @@ def get_borrow_history():
     )
 
 
+# Alias để route của phuonganh nếu gọi tên này thì vẫn chạy đúng logic của bạn
+borrow_history_controller = get_borrow_history
+
+
 # ================== USER: FORM SỬA YÊU CẦU ==================
 def show_edit_borrow_request_form(borrow_id):
     current_user = get_current_user()
@@ -899,7 +810,6 @@ def update_borrow_request(borrow_id):
 
     item.quantity = quantity
     assign_branch_to_item(item, branch_id, selected_copy)
-
     borrow_request.note = note
 
     db.session.commit()
@@ -1121,6 +1031,103 @@ def get_admin_borrow_records():
     )
 
 
+# ================== ADMIN/THỦ THƯ: TRA CỨU LỊCH SỬ MƯỢN ==================
+def borrow_lookup_controller():
+    if not is_admin_or_librarian():
+        flash("Bạn không có quyền truy cập trang này.", "error")
+        return redirect(url_for("home.index"))
+
+    keyword = request.args.get("q", "").strip()
+    status_filter = request.args.get("status", "").strip()
+    from_date = request.args.get("from_date", "").strip()
+    to_date = request.args.get("to_date", "").strip()
+
+    conditions = ["1=1"]
+    params = {}
+
+    if keyword:
+        conditions.append("(u.username LIKE :kw OR u.full_name LIKE :kw)")
+        params["kw"] = f"%{keyword}%"
+
+    if status_filter:
+        conditions.append("br.status = :status")
+        params["status"] = status_filter
+
+    if from_date:
+        conditions.append("DATE(br.borrow_date) >= :from_date")
+        params["from_date"] = from_date
+
+    if to_date:
+        conditions.append("DATE(br.borrow_date) <= :to_date")
+        params["to_date"] = to_date
+
+    where = " AND ".join(conditions)
+
+    sql = f"""
+        SELECT
+            br.id AS borrow_record_id,
+            br.borrow_date,
+            br.due_date,
+            br.status AS borrow_status,
+            u.id AS user_id,
+            u.username,
+            u.full_name,
+            GROUP_CONCAT(b.title SEPARATOR ', ') AS book_titles,
+            SUM(bri.quantity) AS total_quantity
+        FROM borrow_records br
+        JOIN users u ON br.user_id = u.id
+        JOIN borrow_record_items bri ON br.id = bri.borrow_record_id
+        JOIN books b ON bri.book_id = b.id
+        WHERE {where}
+        GROUP BY br.id, br.borrow_date, br.due_date, br.status, u.id, u.username, u.full_name
+        ORDER BY br.borrow_date DESC
+        LIMIT 200
+    """
+
+    records = db.session.execute(text(sql), params).mappings().all()
+
+    return render_template(
+        "borrow/lookup.html",
+        records=records,
+        keyword=keyword,
+        status_filter=status_filter,
+        from_date=from_date,
+        to_date=to_date,
+        now=datetime.now(),
+    )
+
+
+# ================== ADMIN/THỦ THƯ: QUẢN LÝ PHIẾU ĐANG MƯỢN ==================
+def borrow_manage_controller():
+    if not is_admin_or_librarian():
+        flash("Bạn không có quyền truy cập trang này.", "error")
+        return redirect(url_for("home.index"))
+
+    active_records = (
+        BorrowRecord.query
+        .filter(BorrowRecord.status == "borrowing")
+        .order_by(BorrowRecord.borrow_date.asc())
+        .all()
+    )
+
+    returned_records = (
+        BorrowRecord.query
+        .filter(BorrowRecord.status == "returned")
+        .order_by(BorrowRecord.borrow_date.desc())
+        .limit(50)
+        .all()
+    )
+
+    return render_template(
+        "borrow/manage.html",
+        active_records=active_records,
+        returned_records=returned_records,
+        now=datetime.now(),
+        get_record_status_label=get_record_status_label,
+        get_record_item_branch_name=get_record_item_branch_name,
+    )
+
+
 # ================== ADMIN: XÁC NHẬN TRẢ SÁCH ==================
 def return_borrow_record(record_id):
     next_url = get_next_url("/admin?tab=borrow&view=records")
@@ -1129,6 +1136,7 @@ def return_borrow_record(record_id):
         flash("Bạn không có quyền thực hiện thao tác này.", "error")
         return redirect(next_url)
 
+    current_user = get_current_user()
     borrow_record = BorrowRecord.query.get(record_id)
 
     if not borrow_record:
@@ -1165,7 +1173,23 @@ def return_borrow_record(record_id):
 
     borrow_record.status = "returned"
 
+    if ReturnRecord is not None:
+        note = request.form.get("note", "").strip()
+
+        return_record = ReturnRecord(
+            borrow_record_id=borrow_record.id,
+            processed_by=current_user.id if current_user else None,
+            return_date=datetime.utcnow(),
+            note=note if note else None,
+            created_at=datetime.utcnow(),
+        )
+        db.session.add(return_record)
+
     db.session.commit()
 
     flash("Đã xác nhận trả sách.", "success")
     return redirect(next_url)
+
+
+# Alias để route của phuonganh nếu gọi tên này thì vẫn dùng logic trả sách theo chi nhánh của bạn
+return_book_controller = return_borrow_record

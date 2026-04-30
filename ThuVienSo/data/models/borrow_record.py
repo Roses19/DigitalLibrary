@@ -54,3 +54,12 @@ class BorrowRecord(db.Model):
         back_populates="borrow_record",
         cascade="all, delete-orphan"
     )
+
+    return_records = db.relationship(
+        "ReturnRecord",
+        backref="borrow_record",
+        cascade="all, delete-orphan"
+    )
+
+    def __repr__(self):
+        return f"<BorrowRecord {self.id} - {self.status}>"

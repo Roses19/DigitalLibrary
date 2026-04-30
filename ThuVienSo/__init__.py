@@ -33,3 +33,8 @@ def init_app(app):
     with app.app_context():
         from ThuVienSo.data.models.user import User
         from ThuVienSo.data.models.role import Role
+        from ThuVienSo.data.models.borrow_request import BorrowRequest
+        from ThuVienSo.data.models.borrow_request_item import BorrowRequestItem
+        from ThuVienSo.data.models.borrow_record import BorrowRecord
+        from ThuVienSo.data.models.borrow_record_item import BorrowRecordItem
+        from ThuVienSo.data.models.return_record import ReturnRecord

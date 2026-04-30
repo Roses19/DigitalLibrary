@@ -32,6 +32,7 @@ class BorrowRecordItem(db.Model):
         "Book",
         backref="borrow_record_items"
     )
+
     book_copy_id = db.Column(
         db.Integer,
         db.ForeignKey("book_copies.id"),
@@ -39,3 +40,6 @@ class BorrowRecordItem(db.Model):
     )
 
     book_copy = db.relationship("BookCopy")
+
+    def __repr__(self):
+        return f"<BorrowRecordItem record={self.borrow_record_id} book={self.book_id}>"
