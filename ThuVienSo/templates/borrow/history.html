@@ -135,6 +135,7 @@
                             <th>Ngày mượn</th>
                             <th>Hạn trả</th>
                             <th>Trạng thái</th>
+                            <th>Gia hạn</th>
                         </tr>
                     </thead>
 
@@ -188,6 +189,28 @@
                                     <span class="status-pill record-{{ record.status }}">
                                         {{ get_record_status_label(record.status) }}
                                     </span>
+                                </td>
+                                <td>
+                                    {% set can_extend = record.status == "borrowing"
+                                        and record.due_date
+                                        and record.due_date >= now
+                                        and (record.extend_count or 0) < (rule.max_extend_times or 1) %}
+
+                                    {% if can_extend %}
+                                        <form action="{{ url_for('borrow.extend_record', record_id=record.id) }}"
+                                              method="post"
+                                              class="extend-request-form">
+                                            <button type="submit" class="btn-borrow-action btn-extend-request">
+                                                Gửi gia hạn
+                                            </button>
+                                        </form>
+                                    {% elif record.status == "overdue" %}
+                                        <span class="muted-text">Đã trễ hạn</span>
+                                    {% elif (record.extend_count or 0) >= (rule.max_extend_times or 1) %}
+                                        <span class="muted-text">Hết lượt</span>
+                                    {% else %}
+                                        <span class="muted-text">Không áp dụng</span>
+                                    {% endif %}
                                 </td>
                             </tr>
                         {% endfor %}

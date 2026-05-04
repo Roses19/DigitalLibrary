@@ -8,6 +8,8 @@ from ThuVienSo.data.models.book import Book
 from ThuVienSo.data.models.book_copy import BookCopy
 from ThuVienSo.data.models.book_view import BookView
 from ThuVienSo.data.models.borrow_prediction import BorrowPrediction
+from ThuVienSo.data.models.borrow_request import BorrowRequest
+from ThuVienSo.data.models.borrow_request_item import BorrowRequestItem
 from ThuVienSo.data.models.borrow_record import BorrowRecord
 from ThuVienSo.data.models.borrow_record_item import BorrowRecordItem
 from ThuVienSo.data.models.favorite_category import FavoriteCategory
@@ -39,6 +41,23 @@ def _base_book_query():
         joinedload(Book.publisher),
         joinedload(Book.copies).joinedload(BookCopy.branch),
     )
+
+
+def _role_name(user):
+    return (user.role.name if user and user.role else "").strip().lower()
+
+
+def _is_manager(user):
+    return _role_name(user) in {
+        "admin",
+        "quản trị",
+        "quản trị viên",
+        "quan tri",
+        "quan tri vien",
+        "thủ thư",
+        "thu thu",
+        "librarian",
+    }
 
 
 def _latest_predictions(book_ids):
@@ -145,6 +164,93 @@ def _fallback_recommendations(user):
     return result
 
 
+def _manager_recommendations():
+    scores = defaultdict(float)
+    reasons = defaultdict(list)
+
+    for item in BookView.query.all():
+        scores[item.book_id] += 1
+        reasons[item.book_id].append("được độc giả xem nhiều")
+
+    for item in BorrowRecordItem.query.all():
+        scores[item.book_id] += 3 * (item.quantity or 1)
+        reasons[item.book_id].append("có lịch sử mượn thực tế")
+
+    pending_items = (
+        BorrowRequestItem.query
+        .join(BorrowRequest)
+        .filter(BorrowRequest.status.in_(["pending", "approved"]))
+        .all()
+    )
+
+    for item in pending_items:
+        scores[item.book_id] += 2 * (item.quantity or 1)
+        reasons[item.book_id].append("đang có nhu cầu/yêu cầu mượn")
+
+    favorites = FavoriteCategory.query.all()
+    favorite_category_scores = defaultdict(float)
+    for item in favorites:
+        favorite_category_scores[item.category_id] += float(item.score or 0)
+
+    if favorite_category_scores:
+        books = _base_book_query().all()
+        for book in books:
+            if book.category_id in favorite_category_scores:
+                scores[book.id] += favorite_category_scores[book.category_id] * 2
+                reasons[book.id].append("thuộc thể loại độc giả quan tâm")
+
+    searches = [item.keyword.lower() for item in SearchHistory.query.all() if item.keyword]
+    if searches:
+        books = _base_book_query().all()
+        for book in books:
+            haystack = " ".join([
+                book.title or "",
+                book.description or "",
+                book.category.name if book.category else "",
+            ]).lower()
+
+            matches = sum(
+                1
+                for keyword in searches
+                if any(term in haystack for term in keyword.split())
+            )
+
+            if matches:
+                scores[book.id] += matches * 1.5
+                reasons[book.id].append("khớp với xu hướng tìm kiếm")
+
+    books = _base_book_query().filter(Book.id.in_(scores.keys())).all() if scores else []
+    attach_books_quantity(books)
+    predictions = _latest_predictions([book.id for book in books])
+
+    result = []
+    for book in books:
+        prediction = predictions.get(book.id)
+        available = getattr(book, "available_quantity", 0) or 0
+        predicted = prediction.predicted_borrow_count if prediction else 0
+        demand_score = scores[book.id] + (predicted * 1.5)
+        target_stock = max(int(round(demand_score / 4)), predicted, 1)
+        suggested_import_qty = max(target_stock - available, 0)
+
+        if suggested_import_qty <= 0 and demand_score < 4:
+            continue
+
+        result.append({
+            "book": book,
+            "demand_score": round(demand_score, 1),
+            "available": available,
+            "suggested_import_qty": suggested_import_qty,
+            "prediction": prediction,
+            "reason": ", ".join(dict.fromkeys(reasons[book.id])) or "có tín hiệu nhu cầu từ độc giả",
+        })
+
+    return sorted(
+        result,
+        key=lambda item: (item["suggested_import_qty"], item["demand_score"]),
+        reverse=True,
+    )[:10]
+
+
 def get_recommendations():
     user = _current_user_from_session()
 
@@ -152,9 +258,22 @@ def get_recommendations():
         return render_template(
             "books/recommendations.html",
             recommendations=[],
+            manager_recommendations=[],
             predictions={},
             user_borrow_states={},
             needs_login=True,
+            is_manager=False,
+        )
+
+    if _is_manager(user):
+        return render_template(
+            "books/recommendations.html",
+            recommendations=[],
+            manager_recommendations=_manager_recommendations(),
+            predictions={},
+            user_borrow_states={},
+            needs_login=False,
+            is_manager=True,
         )
 
     stored = (
@@ -188,7 +307,9 @@ def get_recommendations():
     return render_template(
         "books/recommendations.html",
         recommendations=recommendations,
+        manager_recommendations=[],
         predictions=predictions,
         user_borrow_states=get_user_borrow_states(),
         needs_login=False,
+        is_manager=False,
     )

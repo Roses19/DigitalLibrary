@@ -258,6 +258,16 @@
     color: #1d4ed8;
 }
 
+.record-overdue {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.btn-extend-request {
+    background: #17466d;
+    color: #ffffff;
+}
+
 .borrow-status.available {
     background: #dcfce7;
     color: #15803d;

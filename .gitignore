@@ -28,3 +28,6 @@ Thumbs.db
 instance/
 .env
 .venv/
+
+# Private docs
+docs_private/

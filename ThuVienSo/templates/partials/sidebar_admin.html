@@ -1,3 +1,6 @@
+{% set role_name = current_user.role.name|lower if current_user and current_user.role else '' %}
+{% set is_admin = role_name in ['admin', 'quản trị', 'quan tri', 'quản trị viên', 'quan tri vien'] %}
+
 <aside class="admin-sidebar">
 
     <button type="button"
@@ -13,13 +16,14 @@
         <span class="sidebar-icon">👤</span>
         <span>Quản lý người dùng</span>
     </button>
+
+
     <button type="button"
             class="admin-sidebar-link {% if active_tab|default('users') == 'borrow_lookup' %}active{% endif %}"
-            onclick="window.location.href='{{ url_for('borrow.lookup') }}'">
+            onclick="window.location.href='/admin?tab=borrow_lookup'">
         <span class="sidebar-icon">🔍</span>
         <span>Tra cứu lịch sử</span>
     </button>
-
     <button type="button"
             class="admin-sidebar-link {% if active_tab|default('users') == 'borrow' %}active{% endif %}"
             onclick="window.location.href='/admin?tab=borrow'">
@@ -27,6 +31,7 @@
         <span>Mượn trả</span>
     </button>
 
+    {% if is_admin %}
     <button type="button"
             class="admin-sidebar-link {% if active_tab|default('users') == 'report' %}active{% endif %}"
             onclick="window.location.href='/admin?tab=report'">
@@ -40,5 +45,6 @@
         <span class="sidebar-icon">⚖️</span>
         <span>Quy định</span>
     </button>
+    {% endif %}
 
 </aside>

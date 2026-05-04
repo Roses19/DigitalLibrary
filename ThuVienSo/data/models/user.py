@@ -16,6 +16,16 @@ class User(db.Model, UserMixin):
     status = db.Column(db.String(20))
 
     role = db.relationship("Role")
+    branch_id = db.Column(
+        db.Integer,
+        db.ForeignKey("branches.id"),
+        nullable=True
+    )
+
+    branch = db.relationship(
+        "Branch",
+        backref="staff_users"
+    )
 
     def check_password(self, password):
         # return check_password_hash(self.password_hash, password)

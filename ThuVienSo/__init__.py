@@ -1,6 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_mail import Mail
 from flask_login import LoginManager
+from sqlalchemy import text
 from urllib.parse import quote
 
 db = SQLAlchemy()
@@ -38,3 +39,28 @@ def init_app(app):
         from ThuVienSo.data.models.borrow_record import BorrowRecord
         from ThuVienSo.data.models.borrow_record_item import BorrowRecordItem
         from ThuVienSo.data.models.return_record import ReturnRecord
+
+        for column_name, column_sql in {
+            "extend_count": "INT DEFAULT 0",
+            "extension_status": "VARCHAR(20) NULL",
+            "extension_requested_at": "DATETIME NULL",
+        }.items():
+            exists = db.session.execute(
+                text(
+                    """
+                    SELECT COUNT(*)
+                    FROM information_schema.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = 'borrow_records'
+                      AND COLUMN_NAME = :column_name
+                    """
+                ),
+                {"column_name": column_name},
+            ).scalar()
+
+            if not exists:
+                db.session.execute(
+                    text(f"ALTER TABLE borrow_records ADD COLUMN {column_name} {column_sql}")
+                )
+
+        db.session.commit()

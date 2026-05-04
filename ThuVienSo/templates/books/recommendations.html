@@ -9,8 +9,6 @@
 {% block content %}
 <section class="book-list-page recommendations-page">
     <div class="book-list-header">
-        <h1>Gợi ý sách cho bạn</h1>
-        <p>Dựa trên lịch sử xem, mượn, tìm kiếm và thể loại bạn quan tâm.</p>
     </div>
 
     {% if needs_login %}
@@ -18,6 +16,54 @@
             <p>Bạn cần đăng nhập để xem gợi ý sách cá nhân.</p>
             <a href="{{ url_for('auth.login') }}" class="btn-detail">Đăng nhập</a>
         </div>
+    {% elif is_manager %}
+        <p class="results-count">Gợi ý nhập thêm dựa trên dữ liệu xem, tìm kiếm, mượn và thể loại yêu thích của độc giả.</p>
+
+        {% if manager_recommendations %}
+            <div class="manager-recommendation-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Sách</th>
+                            <th>Danh mục</th>
+                            <th>Còn</th>
+                            <th>Nhu cầu</th>
+                            <th>Đề xuất nhập</th>
+                            <th>Lý do</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in manager_recommendations %}
+                            <tr>
+                                <td>
+                                    <strong>{{ item.book.title }}</strong>
+                                    {% if item.prediction %}
+                                        <span class="prediction-chip">
+                                            Dự đoán {{ item.prediction.predicted_borrow_count }} lượt
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ item.book.category.name if item.book.category else "Chưa phân loại" }}</td>
+                                <td>{{ item.available }}</td>
+                                <td>{{ item.demand_score }}</td>
+                                <td>
+                                    {% if item.suggested_import_qty > 0 %}
+                                        <strong class="import-qty">+{{ item.suggested_import_qty }}</strong>
+                                    {% else %}
+                                        Theo dõi thêm
+                                    {% endif %}
+                                </td>
+                                <td>{{ item.reason }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-books">
+                <p>Chưa có đủ tín hiệu nhu cầu từ độc giả để tạo gợi ý quản lý.</p>
+            </div>
+        {% endif %}
     {% elif recommendations %}
         <p class="results-count">Hiển thị <strong>{{ recommendations|length }}</strong> gợi ý phù hợp nhất</p>
 

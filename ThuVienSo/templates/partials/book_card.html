@@ -1,3 +1,15 @@
+{% set role_name = current_user.role.name|lower if current_user and current_user.role else '' %}
+{% set is_staff = role_name in [
+    'admin',
+    'quản trị',
+    'quan tri',
+    'quản trị viên',
+    'quan tri vien',
+    'thủ thư',
+    'thu thu',
+    'librarian'
+] %}
+
 <div class="book-card">
 
     <a href="{{ url_for('book.detail', book_id=book.id) }}" class="book-cover-link">
@@ -54,36 +66,38 @@
                 Xem chi tiết
             </a>
 
-            {% set borrow_state = user_borrow_states.get(book.id) if user_borrow_states is defined and user_borrow_states else None %}
+            {% if not is_staff %}
+                {% set borrow_state = user_borrow_states.get(book.id) if user_borrow_states is defined and user_borrow_states else None %}
 
-            {% if (book.available_quantity or 0) > 0 %}
+                {% if (book.available_quantity or 0) > 0 %}
 
-                {% if borrow_state and borrow_state.status == 'pending' %}
-                    <a href="{{ url_for('borrow.edit_form', borrow_id=borrow_state.request_id) }}"
-                       class="btn-borrow">
-                        Sửa phiếu mượn
-                    </a>
+                    {% if borrow_state and borrow_state.status == 'pending' %}
+                        <a href="{{ url_for('borrow.edit_form', borrow_id=borrow_state.request_id) }}"
+                           class="btn-borrow">
+                            Sửa phiếu mượn
+                        </a>
 
-                {% elif borrow_state == 'pending' %}
-                    <a href="{{ url_for('borrow.borrow_form', book_id=book.id) }}"
-                       class="btn-borrow">
-                        Sửa phiếu mượn
-                    </a>
+                    {% elif borrow_state == 'pending' %}
+                        <a href="{{ url_for('borrow.borrow_form', book_id=book.id) }}"
+                           class="btn-borrow">
+                            Sửa phiếu mượn
+                        </a>
+
+                    {% else %}
+                        <form action="{{ url_for('borrow.borrow_form', book_id=book.id) }}"
+                              method="get"
+                              class="borrow-form">
+                            <button type="submit" class="btn-borrow">
+                                Mượn sách
+                            </button>
+                        </form>
+                    {% endif %}
 
                 {% else %}
-                    <form action="{{ url_for('borrow.borrow_form', book_id=book.id) }}"
-                          method="get"
-                          class="borrow-form">
-                        <button type="submit" class="btn-borrow">
-                            Mượn sách
-                        </button>
-                    </form>
+                    <button type="button" class="btn-borrow disabled" disabled>
+                        Hết sách
+                    </button>
                 {% endif %}
-
-            {% else %}
-                <button type="button" class="btn-borrow disabled" disabled>
-                    Hết sách
-                </button>
             {% endif %}
 
         </div>

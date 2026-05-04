@@ -12,6 +12,7 @@ from ThuVienSo.controller.borrow_controller import (
     show_edit_borrow_request_form,
     update_borrow_request,
     delete_borrow_request,
+    request_borrow_extension,
     borrow_manage_controller,
     borrow_lookup_controller,
     return_book_controller,
@@ -53,6 +54,11 @@ def update_request(borrow_id):
 @borrow_bp.route("/request/<int:borrow_id>/delete", methods=["POST"])
 def delete_request(borrow_id):
     return delete_borrow_request(borrow_id)
+
+
+@borrow_bp.route("/record/<int:record_id>/extend", methods=["POST"])
+def extend_record(record_id):
+    return request_borrow_extension(record_id)
 
 
 # ================== ADMIN: DUYỆT MƯỢN ==================

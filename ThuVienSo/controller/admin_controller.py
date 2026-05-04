@@ -1,36 +1,50 @@
-from flask import render_template, request, redirect, url_for, flash
-from sqlalchemy import func
+from datetime import datetime
+
+from flask import render_template, request, redirect, flash, session
+from sqlalchemy import func, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 from werkzeug.security import generate_password_hash
-from ThuVienSo.data.models.borrow_record import BorrowRecord
-from datetime import datetime
+
 from ThuVienSo import db
 from ThuVienSo.controller.borrow_controller import (
     get_borrow_item_branch_name,
     get_record_item_branch_name,
+    refresh_overdue_records,
     safe_int,
 )
-from sqlalchemy import func
+from ThuVienSo.data.models.book import Book
 from ThuVienSo.data.models.book_copy import BookCopy
-from ThuVienSo.data.models.borrow_record_item import BorrowRecordItem
-from ThuVienSo.data.models.book import Book
-from ThuVienSo.data.models.role import Role
-from ThuVienSo.data.models.user import User
-from ThuVienSo.data.models.borrow_request import BorrowRequest
 from ThuVienSo.data.models.borrow_record import BorrowRecord
-from ThuVienSo.data.models.book import Book
+from ThuVienSo.data.models.borrow_request import BorrowRequest
+from ThuVienSo.data.models.branch import Branch
 from ThuVienSo.data.models.category import Category
 from ThuVienSo.data.models.publisher import Publisher
-from ThuVienSo.data.models.branch import Branch
-from ThuVienSo.data.models.book_copy import BookCopy
+from ThuVienSo.data.models.role import Role
 from ThuVienSo.data.models.rule import LibraryRule
+from ThuVienSo.data.models.user import User
+
 
 USER_STATUSES = ["active", "locked", "inactive"]
 BOOK_STATUSES = ["available", "out_of_stock"]
 
+
 def _get_next_url(default="/admin?tab=users"):
-    return request.form.get("next_url") or default
+    return request.form.get("next_url") or request.args.get("next_url") or default
+
+
+def _get_current_user():
+    user_id = session.get("user_id")
+
+    if user_id:
+        return User.query.get(user_id)
+
+    username = session.get("username")
+
+    if username:
+        return User.query.filter_by(username=username).first()
+
+    return None
 
 
 def _role_name(user):
@@ -38,7 +52,55 @@ def _role_name(user):
 
 
 def _is_admin(user):
-    return _role_name(user) in {"admin", "quản trị", "quản trị viên"}
+    return _role_name(user) in {
+        "admin",
+        "quản trị",
+        "quan tri",
+        "quản trị viên",
+        "quan tri vien",
+    }
+
+
+def _is_librarian(user):
+    return _role_name(user) in {
+        "thủ thư",
+        "thu thu",
+        "librarian",
+    }
+
+
+def _get_visible_users_for_current_user():
+    current_user = _get_current_user()
+
+    query = User.query.options(joinedload(User.role))
+
+    if current_user:
+        query = query.filter(User.id != current_user.id)
+
+    if _is_librarian(current_user):
+        query = query.join(Role).filter(
+            func.lower(Role.name).in_(["độc giả", "doc gia", "reader"])
+        )
+
+    return query.order_by(User.id.asc()).all()
+
+
+def _can_access_admin_module(user, module_name):
+    if not user or user.status != "active":
+        return False
+
+    if _is_admin(user):
+        return True
+
+    if _is_librarian(user):
+        return module_name in {
+            "books",
+            "borrow",
+            "borrow_lookup",
+            "borrow_manage",
+        }
+
+    return False
 
 
 def _is_last_admin(user):
@@ -46,7 +108,14 @@ def _is_last_admin(user):
         return False
 
     admin_roles = Role.query.filter(
-        Role.name.in_(["admin", "Quản trị", "Quản trị viên"])
+        Role.name.in_([
+            "admin",
+            "Admin",
+            "Quản trị",
+            "quản trị",
+            "Quản trị viên",
+            "quản trị viên",
+        ])
     ).all()
 
     admin_role_ids = [role.id for role in admin_roles]
@@ -69,50 +138,104 @@ def get_request_status_label(status):
     labels = {
         "pending": "Chờ duyệt",
         "approved": "Đã duyệt",
-        "rejected": "Đã từ chối"
+        "rejected": "Đã từ chối",
     }
 
     return labels.get(status, status)
 
 
 def get_record_status_label(status):
+    if status == "overdue":
+        return "Trễ hạn"
+
     labels = {
         "borrowing": "Đang mượn",
-        "returned": "Đã trả"
+        "returned": "Đã trả",
     }
 
     return labels.get(status, status)
 
+
+def get_lookup_records(keyword="", status_filter="", from_date="", to_date=""):
+    conditions = ["1=1"]
+    params = {}
+
+    if keyword:
+        conditions.append("(u.username LIKE :kw OR u.full_name LIKE :kw)")
+        params["kw"] = f"%{keyword}%"
+
+    if status_filter:
+        conditions.append("LOWER(TRIM(br.status)) = :status")
+        params["status"] = status_filter.lower().strip()
+
+    if from_date:
+        conditions.append("DATE(br.borrow_date) >= :from_date")
+        params["from_date"] = from_date
+
+    if to_date:
+        conditions.append("DATE(br.borrow_date) <= :to_date")
+        params["to_date"] = to_date
+
+    where = " AND ".join(conditions)
+
+    sql = f"""
+        SELECT
+            br.id AS borrow_record_id,
+            br.borrow_date,
+            br.due_date,
+            br.status AS borrow_status,
+            u.id AS user_id,
+            u.username,
+            u.full_name,
+            GROUP_CONCAT(b.title SEPARATOR ', ') AS book_titles,
+            SUM(bri.quantity) AS total_quantity
+        FROM borrow_records br
+        JOIN users u ON br.user_id = u.id
+        JOIN borrow_record_items bri ON br.id = bri.borrow_record_id
+        JOIN books b ON bri.book_id = b.id
+        WHERE {where}
+        GROUP BY br.id, br.borrow_date, br.due_date, br.status, u.id, u.username, u.full_name
+        ORDER BY br.borrow_date DESC
+        LIMIT 200
+    """
+
+    return db.session.execute(text(sql), params).mappings().all()
+
+
 def admin_dashboard():
+    refresh_overdue_records()
+
+    current_user = _get_current_user()
+
     active_tab = request.args.get("tab", "users").strip()
     selected_status = request.args.get("status", "").strip()
     selected_view = request.args.get("view", "").strip()
     selected_category = request.args.get("category", "").strip()
-    rule = LibraryRule.query.filter_by(is_active=True).first()
 
-    # USERS
-    users = User.query.order_by(User.id.asc()).all()
+    users = _get_visible_users_for_current_user()
     roles = Role.query.order_by(Role.id.asc()).all()
 
-    book_query = Book.query
-
-    # BOOKS
     categories = Category.query.order_by(Category.name.asc()).all()
     publishers = Publisher.query.order_by(Publisher.name.asc()).all()
     branches = Branch.query.order_by(Branch.name.asc()).all()
 
-    books = (
-        Book.query
-        .options(joinedload(Book.copies).joinedload(BookCopy.branch))
-        .order_by(Book.created_at.desc())
-        .all()
-    )
+    book_query = Book.query
 
     if selected_category:
-        category_id = safe_int(selected_category)
+        category_id = safe_int(selected_category, 0)
 
         if category_id:
             book_query = book_query.filter(Book.category_id == category_id)
+
+    if _is_librarian(current_user):
+        if getattr(current_user, "branch_id", None):
+            book_query = (
+                book_query
+                .join(BookCopy)
+                .filter(BookCopy.branch_id == current_user.branch_id)
+            )
+        else:
+            book_query = book_query.filter(False)
 
     books = (
         book_query
@@ -121,15 +244,10 @@ def admin_dashboard():
         .all()
     )
 
-    # BORROWS
+    rule = LibraryRule.query.filter_by(is_active=True).first()
+
     borrow_requests = []
     borrow_records = []
-
-    # REPORT
-    total_books = 0
-    total_users = 0
-    total_borrowing = 0
-    total_overdue = 0
 
     if active_tab == "borrow":
         if selected_view == "records":
@@ -149,92 +267,66 @@ def admin_dashboard():
                 .order_by(BorrowRequest.created_at.desc())
                 .all()
             )
-    # ================= REPORT =================
 
-    # Tổng lượt mượn
+    keyword = request.args.get("q", "").strip()
+    status_filter = request.args.get("status", "").strip()
+    from_date = request.args.get("from_date", "").strip()
+    to_date = request.args.get("to_date", "").strip()
+
+    lookup_records = []
+
+    if active_tab == "borrow_lookup":
+        lookup_records = get_lookup_records(
+            keyword=keyword,
+            status_filter=status_filter,
+            from_date=from_date,
+            to_date=to_date,
+        )
+
     total_borrow = BorrowRecord.query.count()
+    borrowing = BorrowRecord.query.filter_by(status="borrowing").count()
+    returned = BorrowRecord.query.filter_by(status="returned").count()
 
-    # Đang mượn
-    borrowing = (
-        BorrowRecord.query
-        .filter_by(status="borrowing")
-        .count()
-    )
-
-    # Đã trả
-    returned = (
-        BorrowRecord.query
-        .filter_by(status="returned")
-        .count()
-    )
-
-    # Trễ hạn
     overdue = (
         BorrowRecord.query
         .filter(
-            BorrowRecord.status == "borrowing",
+            BorrowRecord.status.in_(["borrowing", "overdue"]),
             BorrowRecord.due_date < datetime.utcnow()
         )
         .count()
     )
 
-    # Trả đúng hạn
-    returned_on_time = (
-        BorrowRecord.query
-        .filter(
-            BorrowRecord.status == "returned"
-        )
-        .count()
-    )
-
-    # Chưa trả
+    returned_on_time = BorrowRecord.query.filter_by(status="returned").count()
     not_returned = borrowing
-
-    # Tổng đầu sách
     total_titles = Book.query.count()
 
-    # Tổng số bản sách
     total_book_quantity = (
-                              db.session.query(
-                                  func.sum(BookCopy.total_quantity)
-                              ).scalar()
-                          ) or 0
+        db.session.query(func.sum(BookCopy.total_quantity)).scalar()
+    ) or 0
 
-    # Tổng sách còn
     available_books = (
-                          db.session.query(
-                              func.sum(BookCopy.available_quantity)
-                          ).scalar()
-                      ) or 0
+        db.session.query(func.sum(BookCopy.available_quantity)).scalar()
+    ) or 0
 
-    # Tổng sách đang được mượn
     borrowed_books = total_book_quantity - available_books
-
-    # Tỷ lệ mượn
     borrow_percent = 0
 
     if total_book_quantity > 0:
-        borrow_percent = round(
-            (borrowed_books / total_book_quantity) * 100,
-            1
-        )
+        borrow_percent = round((borrowed_books / total_book_quantity) * 100, 1)
+
     return render_template(
         "admin/dashboard.html",
-
         active_tab=active_tab,
         selected_status=selected_status,
         selected_view=selected_view,
         selected_category=selected_category,
-
         users=users,
         roles=roles,
         statuses=USER_STATUSES,
-
         books=books,
         categories=categories,
         publishers=publishers,
         branches=branches,
-
         borrow_requests=borrow_requests,
         borrow_records=borrow_records,
         rule=rule,
@@ -242,24 +334,30 @@ def admin_dashboard():
         get_record_status_label=get_record_status_label,
         get_borrow_item_branch_name=get_borrow_item_branch_name,
         get_record_item_branch_name=get_record_item_branch_name,
-
         total_borrow=total_borrow,
         borrowing=borrowing,
         returned=returned,
         overdue=overdue,
         returned_on_time=returned_on_time,
         not_returned=not_returned,
-
         total_titles=total_titles,
         total_book_quantity=total_book_quantity,
         available_books=available_books,
         borrowed_books=borrowed_books,
         borrow_percent=borrow_percent,
+        lookup_records=lookup_records,
+        keyword=keyword,
+        status_filter=status_filter,
+        from_date=from_date,
+        to_date=to_date,
+        now=datetime.now(),
     )
 
+
 def list_users():
-    users = User.query.order_by(User.id.asc()).all()
+    users = _get_visible_users_for_current_user()
     roles = Role.query.order_by(Role.id.asc()).all()
+
     return render_template(
         "admin/users.html",
         users=users,
@@ -278,6 +376,7 @@ def create_user():
     password = request.form.get("password", "").strip()
     role_id = request.form.get("role_id", "").strip()
     status = request.form.get("status", "active").strip()
+    branch_id = request.form.get("branch_id") or None
 
     if not full_name or not username or not email or not password:
         flash("Họ tên, username, email và mật khẩu không được để trống.", "error")
@@ -311,6 +410,9 @@ def create_user():
         password_hash=generate_password_hash(password),
     )
 
+    if hasattr(user, "branch_id"):
+        user.branch_id = safe_int(branch_id, None) if branch_id else None
+
     db.session.add(user)
     db.session.commit()
 
@@ -320,7 +422,6 @@ def create_user():
 
 def update_user(user_id):
     next_url = _get_next_url()
-
     user = User.query.get(user_id)
 
     if user is None:
@@ -334,6 +435,7 @@ def update_user(user_id):
     password = request.form.get("password", "").strip()
     role_id = request.form.get("role_id", "").strip()
     status = request.form.get("status", "active").strip()
+    branch_id = request.form.get("branch_id") or None
 
     if not full_name or not username or not email:
         flash("Họ tên, username và email không được để trống.", "error")
@@ -379,7 +481,9 @@ def update_user(user_id):
     new_role_is_admin = role.name.strip().lower() in {
         "admin",
         "quản trị",
-        "quản trị viên"
+        "quan tri",
+        "quản trị viên",
+        "quan tri vien",
     }
 
     if old_is_last_admin and (not new_role_is_admin or status == "locked"):
@@ -393,6 +497,9 @@ def update_user(user_id):
     user.role_id = role.id
     user.status = status
 
+    if hasattr(user, "branch_id"):
+        user.branch_id = safe_int(branch_id, None) if branch_id else None
+
     if password:
         user.password_hash = generate_password_hash(password)
 
@@ -404,7 +511,6 @@ def update_user(user_id):
 
 def toggle_user_status(user_id):
     next_url = _get_next_url()
-
     user = User.query.get(user_id)
 
     if user is None:
@@ -429,7 +535,6 @@ def toggle_user_status(user_id):
 
 def delete_user(user_id):
     next_url = _get_next_url()
-
     user = User.query.get(user_id)
 
     if user is None:

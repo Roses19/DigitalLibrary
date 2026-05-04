@@ -4,6 +4,7 @@ from ThuVienSo import db
 from ThuVienSo.data.models.user import User
 from ThuVienSo.data.models.role import Role
 from flask_login import login_user
+from ThuVienSo.controller.borrow_controller import get_overdue_records
 
 from ThuVienSo.data.models.role import Role
 
@@ -58,10 +59,14 @@ def login_controller():
             login_user(user)
 
             session['role'] = user.role.name
+            overdue_records = get_overdue_records(user.id)
+            if overdue_records:
+                session['overdue_login_alert'] = True
+                session['overdue_login_count'] = len(overdue_records)
             if user.role.name == 'Quản trị':
                 return redirect(url_for('admin_bp.dashboard'))
             elif user.role.name == 'Thủ thư':
-                return redirect(url_for('staff_page'))
+                return redirect(url_for('admin_bp.dashboard'))
             else:
                 return redirect(url_for('home.index'))
 

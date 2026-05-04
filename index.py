@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, session
 from ThuVienSo import init_app
 from ThuVienSo.routes.home_routes import home_bp
 from ThuVienSo.routes.book_routes import book_bp
@@ -27,8 +27,13 @@ app.register_blueprint(user_bp)
 
 @app.context_processor
 def inject_borrow_helpers():
+    overdue_alert = session.pop("overdue_login_alert", False)
+    overdue_count = session.pop("overdue_login_count", 0) if overdue_alert else 0
+
     return {
-        "get_user_borrow_state_for_book": get_user_borrow_state_for_book
+        "get_user_borrow_state_for_book": get_user_borrow_state_for_book,
+        "login_overdue_alert": overdue_alert,
+        "login_overdue_count": overdue_count,
     }
 app.jinja_env.globals["get_user_borrow_state_for_book"] = get_user_borrow_state_for_book
 

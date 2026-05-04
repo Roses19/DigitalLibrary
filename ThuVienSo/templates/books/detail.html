@@ -9,11 +9,22 @@
 {% endblock %}
 
 {% block content %}
+{% set role_name = current_user.role.name|lower if current_user and current_user.role else '' %}
+{% set is_staff = role_name in [
+    'admin',
+    'quản trị',
+    'quan tri',
+    'quản trị viên',
+    'quan tri vien',
+    'thủ thư',
+    'thu thu',
+    'librarian'
+] %}
+
 <div class="book-detail-page">
     {% if book %}
         <div class="book-detail-card">
 
-            <!-- COVER -->
             <div class="book-detail-cover">
                 {% if book.cover_image %}
                     <img src="{{ book.cover_image }}" alt="{{ book.title }}">
@@ -23,7 +34,6 @@
                 {% endif %}
             </div>
 
-            <!-- INFO -->
             <div class="book-detail-info">
                 <h1>{{ book.title }}</h1>
 
@@ -75,7 +85,6 @@
                     </tr>
                 </table>
 
-                <!-- CHI NHÁNH + KỆ + SỐ LƯỢNG -->
                 <div class="book-copies-section">
                     <h3>Thông tin lưu trữ</h3>
 
@@ -102,20 +111,21 @@
                                         Còn {{ copy.available_quantity }} cuốn
                                     </span>
 
-                                    <!-- MƯỢN SÁCH THEO ĐÚNG CHI NHÁNH -->
-                                    <form action="{{ url_for('borrow.borrow_form', book_id=book.id, branch_id=copy.branch_id) }}"
-                                          method="get"
-                                          class="borrow-form detail-borrow-form">
+                                    {% if not is_staff %}
+                                        <form action="{{ url_for('borrow.borrow_form', book_id=book.id, branch_id=copy.branch_id) }}"
+                                              method="get"
+                                              class="borrow-form detail-borrow-form">
 
-                                        <input type="hidden"
-                                               name="branch_id"
-                                               value="{{ copy.branch_id }}">
+                                            <input type="hidden"
+                                                   name="branch_id"
+                                                   value="{{ copy.branch_id }}">
 
-                                        <button type="submit"
-                                                class="detail-tab borrow btn-borrow">
-                                            Mượn sách
-                                        </button>
-                                    </form>
+                                            <button type="submit"
+                                                    class="detail-tab borrow btn-borrow">
+                                                Mượn sách
+                                            </button>
+                                        </form>
+                                    {% endif %}
                                 {% else %}
                                     <span class="status-badge unavailable">
                                         Hết
@@ -133,9 +143,7 @@
                     </table>
                 </div>
 
-                <!-- TỔNG SỐ LƯỢNG -->
                 <div class="book-summary">
-
                     {% if available <= 0 %}
                         <span class="status-badge unavailable">
                             Đã hết sách
@@ -143,7 +151,6 @@
                     {% endif %}
                 </div>
 
-                <!-- DESCRIPTION -->
                 <div class="book-description">
                     <h3>Mô tả sách</h3>
                     <p>{{ book.description or "Chưa có mô tả cho sách này." }}</p>

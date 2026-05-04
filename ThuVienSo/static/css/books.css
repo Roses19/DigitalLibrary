@@ -1321,6 +1321,41 @@
     font-weight: 800;
 }
 
+.manager-recommendation-table {
+    overflow-x: auto;
+    background: #ffffff;
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(15, 45, 80, 0.08);
+}
+
+.manager-recommendation-table table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 900px;
+}
+
+.manager-recommendation-table th {
+    background: #17466d;
+    color: #ffffff;
+    padding: 14px 16px;
+    text-align: left;
+}
+
+.manager-recommendation-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid #e5e7eb;
+    vertical-align: middle;
+}
+
+.manager-recommendation-table tr:last-child td {
+    border-bottom: none;
+}
+
+.import-qty {
+    color: #15803d;
+    font-size: 18px;
+}
+
 
 /* =========================================================
    RESPONSIVE

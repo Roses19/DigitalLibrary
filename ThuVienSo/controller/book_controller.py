@@ -415,7 +415,11 @@ def search_books():
             selected_categories = [str(category.id) for category in categories]
             selected_publishers = [str(publisher.id) for publisher in publishers]
             selected_branches = [str(branch.id) for branch in branches]
-            selected_statuses = [status["value"] for status in status_options]
+            selected_statuses = (
+                [status_options[0]["value"]]
+                if len(status_options) == 1
+                else []
+            )
     else:
         categories, publishers, branches = get_dropdown_data()
         all_books = base_book_query().all()
