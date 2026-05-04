@@ -72,3 +72,26 @@ def login_controller():
 def logout_controller():
     session.clear()
     return redirect(url_for('home.index'))
+
+
+def get_user_by_email(email):
+
+    return (
+        User.query
+        .filter_by(email=email)
+        .first()
+    )
+
+
+def reset_user_password(email, new_password):
+
+    user = get_user_by_email(email)
+
+    if not user:
+        return False
+
+    user.password_hash = new_password
+
+    db.session.commit()
+
+    return True

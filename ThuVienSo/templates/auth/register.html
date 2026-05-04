@@ -6,23 +6,39 @@
     <div class="container mt-5">
         <!-- Hiển thị thông báo flash nếu có -->
         <div class="container mt-4">
+<!--            {% with messages = get_flashed_messages(with_categories=true) %}-->
+<!--                {% if messages %}-->
+<!--                    {% for category, message in messages %}-->
+<!--                        {% if category == 'success' %}-->
+<!--                            <div class="alert alert-success alert-dismissible fade show" role="alert">-->
+<!--                                {{ message }}-->
+<!--                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>-->
+<!--                            </div>-->
+<!--                        {% elif category == 'error' %}-->
+<!--                            <div class="alert alert-danger alert-dismissible fade show" role="alert">-->
+<!--                                {{ message }}-->
+<!--                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>-->
+<!--                            </div>-->
+<!--                        {% endif %}-->
+<!--                    {% endfor %}-->
+<!--                {% endif %}-->
+<!--            {% endwith %}-->
             {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        {% if category == 'success' %}
-                            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                                {{ message }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                            </div>
-                        {% elif category == 'error' %}
-                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                                {{ message }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                            </div>
-                        {% endif %}
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
+    {% if messages %}
+
+        {% for category, message in messages %}
+
+            <div
+                class="alert alert-{{ category }}"
+                role="alert"
+            >
+                {{ message }}
+            </div>
+
+        {% endfor %}
+
+    {% endif %}
+{% endwith %}
         </div>
 
         <h2 class="mb-3" style="color:#1a3c5e; font-weight:600;">Đăng ký tài khoản</h2>

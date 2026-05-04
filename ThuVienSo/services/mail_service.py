@@ -11,14 +11,18 @@ mail = Mail()
 # =========================
 def send_email(subject, recipients, body):
 
+    print("SENDING MAIL TO:", recipients)
+
     msg = Message(
         subject=subject,
         recipients=recipients,
         body=body,
-        sender="Thư viện số"
+        sender="phuongnhu308@gmail.com"
     )
 
     mail.send(msg)
+
+    print("MAIL SENT")
 
 
 # =========================
@@ -26,7 +30,9 @@ def send_email(subject, recipients, body):
 # =========================
 def send_due_reminder_emails():
 
-    tomorrow = datetime.utcnow() + timedelta(days=1)
+    print("RUNNING REMINDER EMAIL")
+
+    tomorrow = datetime.now() + timedelta(days=1)
 
     records = (
         BorrowRecord.query
@@ -36,9 +42,17 @@ def send_due_reminder_emails():
         .all()
     )
 
+    print("TOTAL RECORDS:", len(records))
+
     for r in records:
 
+        print("RECORD:", r.id)
+        print("DUE:", r.due_date.date())
+        print("STATUS:", r.status)
+
         if r.due_date.date() == tomorrow.date():
+
+            print("REMINDER FOUND")
 
             body = f"""
 Xin chào {r.user.full_name},
@@ -51,11 +65,21 @@ Vui lòng trả sách đúng hạn.
 Thư viện số
 """
 
-            send_email(
-                subject="Nhắc trả sách",
-                recipients=[r.user.email],
-                body=body
-            )
+            try:
+
+                print("USER:", r.user)
+                print("EMAIL:", r.user.email)
+
+                send_email(
+                    subject="Nhắc trả sách",
+                    recipients=[r.user.email],
+                    body=body
+                )
+
+                print("Đã gửi reminder:", r.user.email)
+
+            except Exception as e:
+                print("MAIL ERROR:", e)
 
 
 # =========================
@@ -63,7 +87,9 @@ Thư viện số
 # =========================
 def send_overdue_warning_emails():
 
-    today = datetime.utcnow().date()
+    print("RUNNING OVERDUE EMAIL")
+
+    today = datetime.now().date()
 
     records = (
         BorrowRecord.query
@@ -73,9 +99,18 @@ def send_overdue_warning_emails():
         .all()
     )
 
+    print("TODAY:", today)
+    print("TOTAL RECORDS:", len(records))
+
     for r in records:
 
+        print("RECORD:", r.id)
+        print("DUE:", r.due_date.date())
+        print("STATUS:", r.status)
+
         if r.due_date.date() < today:
+
+            print("OVERDUE FOUND")
 
             late_days = (
                 today - r.due_date.date()
@@ -91,17 +126,31 @@ Vui lòng trả sách sớm nhất có thể.
 Thư viện số
 """
 
-            send_email(
-                subject="Cảnh báo trễ hạn",
-                recipients=[r.user.email],
-                body=body
-            )
+            try:
+
+                print("USER:", r.user)
+                print("EMAIL:", r.user.email)
+
+                print("BEFORE SEND")
+
+                send_email(
+                    subject="Cảnh báo trễ hạn",
+                    recipients=[r.user.email],
+                    body=body
+                )
+
+                print("Đã gửi overdue:", r.user.email)
+
+            except Exception as e:
+                print("MAIL ERROR:", e)
 
 
 # =========================
 # CHẠY TOÀN BỘ EMAIL TỰ ĐỘNG
 # =========================
 def run_auto_email_jobs():
+
+    print("AUTO JOB START")
 
     send_due_reminder_emails()
 
