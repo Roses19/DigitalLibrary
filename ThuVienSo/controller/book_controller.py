@@ -142,6 +142,7 @@ def base_book_query():
     """
     return (
         Book.query
+        .filter(Book.is_deleted == False)
         .options(
             joinedload(Book.authors),
             joinedload(Book.category),
@@ -646,7 +647,10 @@ def delete_book(book_id):
         flash("Không tìm thấy sách cần xóa.", "error")
         return redirect(next_url)
 
-    db.session.delete(book)
+    book.is_deleted = True
+    for copy in book.copies:
+        copy.available_quantity = 0
+        copy.total_quantity = 0
     db.session.commit()
 
     flash("Đã xóa sách.", "success")

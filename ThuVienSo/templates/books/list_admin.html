@@ -39,7 +39,18 @@
                            placeholder="VD: Lập trình Python"
                            required>
                 </div>
-
+                  <div class="form-group">
+                <label>Tác giả</label>
+                <input type="text"
+                       name="authors"
+                       placeholder="VD: Nguyễn Văn A, Trần B">
+            </div>
+                  <div class="form-group">
+                <label>Năm xuất bản</label>
+                <input type="number"
+                       name="publish_year"
+                       placeholder="VD: 2024">
+            </div>
                 <div class="form-group">
                     <label>ISBN</label>
                     <input type="text"
@@ -73,6 +84,22 @@
                     </select>
                 </div>
             </div>
+
+             <div class="form-row">
+            <div class="form-group">
+                <label>Ngôn ngữ</label>
+                <input type="text"
+                       name="language"
+                       placeholder="VD: Tiếng Việt">
+            </div>
+
+            <div class="form-group">
+                <label>Số trang</label>
+                <input type="number"
+                       name="pages"
+                       min="0">
+            </div>
+        </div>
 
             <div class="form-row">
                 <div class="form-group">
@@ -321,11 +348,45 @@
                                         </div>
                                     </div>
 
+                                    <!-- 🔥 BỔ SUNG -->
+<div class="form-row">
+    <div class="form-group">
+        <label>Tác giả</label>
+        <input type="text"
+               name="authors"
+               value="{{ book.authors | map(attribute='name') | join(', ') if book.authors else '' }}">
+    </div>
+
+    <div class="form-group">
+        <label>Năm xuất bản</label>
+        <input type="number"
+               name="publish_year"
+               value="{{ book.publish_year or '' }}">
+    </div>
+</div>
+
+<div class="form-row">
+    <div class="form-group">
+        <label>Ngôn ngữ</label>
+        <input type="text"
+               name="language"
+               value="{{ book.language or '' }}">
+    </div>
+
+    <div class="form-group">
+        <label>Số trang</label>
+        <input type="number"
+               name="pages"
+               value="{{ book.pages or 0 }}">
+    </div>
+</div>
+<!-- END BỔ SUNG -->
                                     <div class="form-group">
                                         <label>Mô tả</label>
                                         <textarea name="description"
                                                   rows="2">{{ book.description or '' }}</textarea>
                                     </div>
+
 
                                     <div class="form-actions">
                                         <button type="submit" class="btn-primary">

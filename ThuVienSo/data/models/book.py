@@ -24,12 +24,22 @@ class Book(db.Model):
 
     category = db.relationship("Category", backref="books")
     publisher = db.relationship("Publisher", backref="books")
+    is_deleted = db.Column(db.Boolean, default=False)
+
     authors = db.relationship(
         "Author",
         secondary=book_authors,
         backref=db.backref("books", lazy="dynamic"),
     )
-    copies = db.relationship("BookCopy", back_populates="book", lazy="select")
+
+    copies = db.relationship(
+        "BookCopy",
+        back_populates="book",
+        lazy="select",
+        cascade="all, delete-orphan"
+    )
+
+
     def __repr__(self):
         return f"<Book {self.title}>"
 
@@ -37,7 +47,6 @@ class Book(db.Model):
     def total(self):
         return sum(c.total_quantity or 0 for c in self.copies)
 
-    # ================== AVAILABLE ==================
     @property
     def available(self):
         return sum(c.available_quantity or 0 for c in self.copies)

@@ -3,6 +3,8 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 from werkzeug.security import generate_password_hash
+
+from ThuVienSo.controller.book_controller import base_book_query
 from ThuVienSo.data.models.borrow_record import BorrowRecord
 from datetime import datetime
 from ThuVienSo import db
@@ -94,19 +96,7 @@ def admin_dashboard():
     users = User.query.order_by(User.id.asc()).all()
     roles = Role.query.order_by(Role.id.asc()).all()
 
-    book_query = Book.query
-
-    # BOOKS
-    categories = Category.query.order_by(Category.name.asc()).all()
-    publishers = Publisher.query.order_by(Publisher.name.asc()).all()
-    branches = Branch.query.order_by(Branch.name.asc()).all()
-
-    books = (
-        Book.query
-        .options(joinedload(Book.copies).joinedload(BookCopy.branch))
-        .order_by(Book.created_at.desc())
-        .all()
-    )
+    book_query = base_book_query()
 
     if selected_category:
         category_id = safe_int(selected_category)
@@ -120,6 +110,11 @@ def admin_dashboard():
         .order_by(Book.id.asc())
         .all()
     )
+
+    # BOOKS
+    categories = Category.query.order_by(Category.name.asc()).all()
+    publishers = Publisher.query.order_by(Publisher.name.asc()).all()
+    branches = Branch.query.order_by(Branch.name.asc()).all()
 
     # BORROWS
     borrow_requests = []
