@@ -12,7 +12,7 @@ from ThuVienSo.data.models.user import User
 from ThuVienSo.data.models.borrow_request import BorrowRequest
 from ThuVienSo.data.models.borrow_request_item import BorrowRequestItem
 from ThuVienSo.data.models.branch import Branch
-
+from datetime import datetime
 
 # =========================================================
 # HELPER
@@ -537,13 +537,8 @@ def get_admin_book_list():
 # CREATE BOOK
 # =========================================================
 def create_book():
-    """
-    Thêm sách cơ bản.
-    Hỗ trợ form có các field:
-    title, isbn, pages, publish_year, language,
-    description, cover_image, category_id, publisher_id
-    """
     next_url = request.form.get("next_url")
+
     title = request.form.get("title", "").strip()
 
     if not title:
@@ -551,17 +546,51 @@ def create_book():
         return redirect(next_url or url_for("book.book_list"))
 
     isbn = request.form.get("isbn", "").strip()
+
     pages = safe_int(request.form.get("pages"))
-    publish_year = safe_int(request.form.get("publish_year"))
+
+    publish_year = safe_int(
+        request.form.get("publish_year")
+    )
+
     language = request.form.get("language", "").strip()
-    description = request.form.get("description", "").strip()
-    cover_image = request.form.get("cover_image", "").strip()
-    category_id = safe_int(request.form.get("category_id"))
-    publisher_id = safe_int(request.form.get("publisher_id"))
-    branch_id = safe_int(request.form.get("branch_id"))
-    shelf_location = request.form.get("shelf_location", "").strip()
-    total_quantity = safe_int(request.form.get("total_quantity"), 0)
-    available_quantity = safe_int(request.form.get("available_quantity"), 0)
+
+    description = request.form.get(
+        "description",
+        ""
+    ).strip()
+
+    cover_image = request.form.get(
+        "cover_image",
+        ""
+    ).strip()
+
+    category_id = safe_int(
+        request.form.get("category_id")
+    )
+
+    publisher_id = safe_int(
+        request.form.get("publisher_id")
+    )
+
+    branch_id = safe_int(
+        request.form.get("branch_id")
+    )
+
+    shelf_location = request.form.get(
+        "shelf_location",
+        ""
+    ).strip()
+
+    total_quantity = safe_int(
+        request.form.get("total_quantity"),
+        0
+    )
+
+    available_quantity = safe_int(
+        request.form.get("available_quantity"),
+        0
+    )
 
     if total_quantity < 0 or available_quantity < 0:
         flash("Số lượng không được nhỏ hơn 0.", "error")
@@ -571,28 +600,93 @@ def create_book():
         flash("Số lượng còn không được lớn hơn tổng số lượng.", "error")
         return redirect(next_url or url_for("book.book_list"))
 
+    current_user = get_current_user()
+
+    # =========================
+    # TẠO BOOK
+    # =========================
     book = Book(
         title=title,
+
         isbn=isbn or None,
+
         pages=pages,
+
         publish_year=publish_year,
+
         language=language or None,
+
         description=description or None,
+
         cover_image=cover_image or None,
+
         category_id=category_id,
-        publisher_id=publisher_id
+
+        publisher_id=publisher_id,
+
+        status="available",
+
+        created_by=current_user.id if current_user else None,
+
+        created_at=datetime.utcnow(),
+
+        updated_at=datetime.utcnow(),
+
+        is_deleted=False
     )
 
     db.session.add(book)
+
     db.session.flush()
 
+    # =========================
+    # AUTHORS
+    # =========================
+    authors_text = request.form.get(
+        "authors",
+        ""
+    ).strip()
+
+    if authors_text:
+        author_names = [
+            name.strip()
+            for name in authors_text.split(",")
+            if name.strip()
+        ]
+
+        authors = []
+
+        for author_name in author_names:
+
+            author = Author.query.filter(
+                Author.name.ilike(author_name)
+            ).first()
+
+            if not author:
+                author = Author(name=author_name)
+
+                db.session.add(author)
+
+                db.session.flush()
+
+            authors.append(author)
+
+        book.authors = authors
+
+    # =========================
+    # BOOK COPY
+    # =========================
     if branch_id:
         db.session.add(
             BookCopy(
                 book_id=book.id,
+
                 branch_id=branch_id,
+
                 shelf_location=shelf_location or None,
+
                 total_quantity=total_quantity,
+
                 available_quantity=available_quantity
             )
         )
@@ -600,8 +694,13 @@ def create_book():
     db.session.commit()
 
     flash("Đã thêm sách mới.", "success")
-    return redirect(next_url or url_for("book.detail", book_id=book.id))
 
+    return redirect(
+        next_url or url_for(
+            "book.detail",
+            book_id=book.id
+        )
+    )
 
 # =========================================================
 # UPDATE BOOK
@@ -629,7 +728,36 @@ def update_book(book_id):
     book.cover_image = request.form.get("cover_image", "").strip() or None
     book.category_id = safe_int(request.form.get("category_id"))
     book.publisher_id = safe_int(request.form.get("publisher_id"))
+    authors_text = request.form.get(
+        "authors",
+        ""
+    ).strip()
 
+    authors = []
+
+    if authors_text:
+        author_names = [
+            name.strip()
+            for name in authors_text.split(",")
+            if name.strip()
+        ]
+
+        for author_name in author_names:
+
+            author = Author.query.filter(
+                Author.name.ilike(author_name)
+            ).first()
+
+            if not author:
+                author = Author(name=author_name)
+
+                db.session.add(author)
+
+                db.session.flush()
+
+            authors.append(author)
+
+    book.authors = authors
     db.session.commit()
 
     flash("Đã cập nhật thông tin sách.", "success")
