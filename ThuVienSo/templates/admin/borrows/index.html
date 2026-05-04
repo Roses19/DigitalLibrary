@@ -1,8 +1,5 @@
 {% block content %}
 <div class="borrow-page">
-    <div class="borrow-header">
-        <p>Duyệt hoặc từ chối yêu cầu mượn sách của độc giả.</p>
-    </div>
 
     <div class="borrow-filter">
         <button type="button"
@@ -32,7 +29,7 @@
         <button type="button"
                 class="{% if selected_view == 'records' %}active{% endif %}"
                 onclick="window.location.href='/admin?tab=borrow&view=records'">
-            Phiếu mượn
+            Xử lý trả
         </button>
     </div>
 

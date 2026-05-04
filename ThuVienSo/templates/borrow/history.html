@@ -44,7 +44,9 @@
                                     {% if request.items %}
                                         {% for item in request.items %}
                                             <div class="borrow-book-line">
-                                                <strong>{{ item.book.title if item.book else 'Sách không tồn tại' }}</strong>
+                                                <strong>
+                                                    {{ item.book.title if item.book else 'Sách không tồn tại' }}
+                                                </strong>
                                                 <span>Số lượng: {{ item.quantity }}</span>
                                             </div>
                                         {% endfor %}
@@ -52,6 +54,7 @@
                                         <span class="muted-text">Không có sách</span>
                                     {% endif %}
                                 </td>
+
                                 <td>
                                     {% if request.items %}
                                         {% for item in request.items %}
@@ -63,6 +66,7 @@
                                         —
                                     {% endif %}
                                 </td>
+
                                 <td>
                                     {% if request.created_at %}
                                         {{ request.created_at.strftime('%d/%m/%Y %H:%M') }}
@@ -141,6 +145,10 @@
 
                     <tbody>
                         {% for record in borrow_records %}
+                            {% set max_extend_times = 1 %}
+                            {% set extend_count = record.extend_count or 0 %}
+                            {% set extension_status = record.extension_status or "" %}
+
                             <tr>
                                 <td>#{{ record.id }}</td>
 
@@ -148,7 +156,9 @@
                                     {% if record.items %}
                                         {% for item in record.items %}
                                             <div class="borrow-book-line">
-                                                <strong>{{ item.book.title if item.book else 'Sách không tồn tại' }}</strong>
+                                                <strong>
+                                                    {{ item.book.title if item.book else 'Sách không tồn tại' }}
+                                                </strong>
                                                 <span>Số lượng: {{ item.quantity }}</span>
                                             </div>
                                         {% endfor %}
@@ -161,7 +171,13 @@
                                     {% if record.items %}
                                         {% for item in record.items %}
                                             <div>
-                                                {{ get_record_item_branch_name(item) if get_record_item_branch_name is defined else (item.book_copy.branch.name if item.book_copy and item.book_copy.branch else "Chưa chọn") }}
+                                                {% if get_record_item_branch_name is defined %}
+                                                    {{ get_record_item_branch_name(item) }}
+                                                {% elif item.book_copy and item.book_copy.branch %}
+                                                    {{ item.book_copy.branch.name }}
+                                                {% else %}
+                                                    Chưa chọn
+                                                {% endif %}
                                             </div>
                                         {% endfor %}
                                     {% else %}
@@ -190,24 +206,60 @@
                                         {{ get_record_status_label(record.status) }}
                                     </span>
                                 </td>
-                                <td>
-                                    {% set can_extend = record.status == "borrowing"
-                                        and record.due_date
-                                        and record.due_date >= now
-                                        and (record.extend_count or 0) < (rule.max_extend_times or 1) %}
 
-                                    {% if can_extend %}
-                                        <form action="{{ url_for('borrow.extend_record', record_id=record.id) }}"
-                                              method="post"
-                                              class="extend-request-form">
-                                            <button type="submit" class="btn-borrow-action btn-extend-request">
+                                <td>
+                                    {% if record.status == "borrowing" %}
+
+                                        {% if extension_status == "pending" %}
+                                            <div class="borrow-extension-info">
+                                                <span class="muted-text">
+                                                    Chờ duyệt gia hạn
+                                                    {% if record.extension_days %}
+                                                        {{ record.extension_days }} ngày
+                                                    {% endif %}
+                                                </span>
+                                                <br>
+                                                <small class="muted-text">
+                                                    Đã dùng lượt gia hạn
+                                                </small>
+                                            </div>
+
+                                        {% elif extension_status == "approved" or extend_count >= max_extend_times %}
+                                            <span class="muted-text">
+                                                Đã gia hạn
+                                                <br>
+                                                <small>{{ extend_count }}/{{ max_extend_times }} lần</small>
+                                            </span>
+
+                                        {% elif extension_status == "rejected" %}
+                                            <span class="muted-text">
+                                                Gia hạn bị từ chối
+                                                <br>
+                                                <small>Không thể gửi lại gia hạn</small>
+                                            </span>
+
+                                        {% elif record.due_date and record.due_date >= now %}
+                                            <a href="{{ url_for('borrow.extend_record', record_id=record.id) }}"
+                                               class="btn-borrow-action btn-extend-request">
                                                 Gửi gia hạn
-                                            </button>
-                                        </form>
+                                            </a>
+
+                                        {% else %}
+                                            <span class="muted-text">Không áp dụng</span>
+                                        {% endif %}
+
                                     {% elif record.status == "overdue" %}
                                         <span class="muted-text">Đã trễ hạn</span>
-                                    {% elif (record.extend_count or 0) >= (rule.max_extend_times or 1) %}
-                                        <span class="muted-text">Hết lượt</span>
+
+                                    {% elif record.status == "returned" %}
+                                        <span class="muted-text">Đã trả</span>
+
+                                    {% elif record.status == "overdue_processed" %}
+                                        <span class="muted-text">Đã xử lý trả trễ</span>
+
+                                    {% elif record.status == "borrow_banned" %}
+                                        <span class="muted-text">Đã bị cấm mượn</span>
+
                                     {% else %}
                                         <span class="muted-text">Không áp dụng</span>
                                     {% endif %}

@@ -3,32 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/books.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/borrow.css') }}">
+
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='resources/logo/logo.png') }}">
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
-          integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+          integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC"
+          crossorigin="anonymous">
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
             integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
             crossorigin="anonymous"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <title>{% block title %}Thư Viện Số{% endblock %}</title>
+
     {% block extra_css %}{% endblock %}
 </head>
+
 <body>
     {% include "partials/navbar.html" %}
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <div class="flash-stack">
-                {% for category, message in messages %}
-                    <div class="flash-message flash-{{ category }}">{{ message }}</div>
-                {% endfor %}
-            </div>
-        {% endif %}
-    {% endwith %}
+    {#
+        Flash message chung cho các trang user.
+        Riêng trang admin sẽ không render ở đây để tránh bị đẩy layout lên/xuống.
+        Admin sẽ render toast riêng trong dashboard.html.
+    #}
+    {% if not request.path.startswith('/admin') %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-stack">
+                    {% for category, message in messages %}
+                        {% set flash_category = {
+                            'error': 'danger',
+                            'danger': 'danger',
+                            'warning': 'warning',
+                            'success': 'success',
+                            'info': 'info'
+                        }.get(category, category) %}
+
+                        <div class="flash-message flash-{{ flash_category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+    {% endif %}
 
     {% if login_overdue_alert %}
         <div class="login-overdue-overlay" id="loginOverdueAlert">
@@ -40,7 +66,9 @@
                 </p>
                 <div class="login-overdue-actions">
                     <button type="button" class="btn-modal-cancel" id="closeOverdueAlert">Đóng</button>
-                    <a href="{{ url_for('borrow.history') }}" class="btn-modal-confirm">Đi đến lịch sử mượn</a>
+                    <a href="{{ url_for('borrow.history') }}" class="btn-modal-confirm">
+                        Đi đến lịch sử mượn
+                    </a>
                 </div>
             </div>
         </div>
@@ -53,20 +81,22 @@
     {% include "partials/footer.html" %}
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
     {% if login_overdue_alert %}
         <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const alertBox = document.getElementById("loginOverdueAlert");
-            const closeButton = document.getElementById("closeOverdueAlert");
+            document.addEventListener("DOMContentLoaded", function () {
+                const alertBox = document.getElementById("loginOverdueAlert");
+                const closeButton = document.getElementById("closeOverdueAlert");
 
-            if (alertBox && closeButton) {
-                closeButton.addEventListener("click", function () {
-                    alertBox.remove();
-                });
-            }
-        });
+                if (alertBox && closeButton) {
+                    closeButton.addEventListener("click", function () {
+                        alertBox.remove();
+                    });
+                }
+            });
         </script>
     {% endif %}
+
     {% block extra_js %}{% endblock %}
 </body>
 </html>

@@ -9,6 +9,30 @@
 {% endblock %}
 
 {% block content %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="admin-flash-toast-container">
+            {% for category, message in messages %}
+                {% set bs_category = {
+                    'error': 'danger',
+                    'danger': 'danger',
+                    'warning': 'warning',
+                    'success': 'success',
+                    'info': 'info'
+                }.get(category, 'info') %}
+
+                <div class="alert alert-{{ bs_category }} alert-dismissible fade show admin-flash-toast" role="alert">
+                    <div class="admin-flash-toast-message">
+                        {{ message }}
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}
+
 <div class="admin-layout">
 
     {% include "partials/sidebar_admin.html" %}
@@ -41,4 +65,19 @@
     </div>
 
 </div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        setTimeout(function () {
+            document.querySelectorAll(".admin-flash-toast").forEach(function (toast) {
+                toast.classList.remove("show");
+
+                setTimeout(function () {
+                    toast.remove();
+                }, 300);
+            });
+        }, 3500);
+    });
+</script>
+
 {% endblock %}

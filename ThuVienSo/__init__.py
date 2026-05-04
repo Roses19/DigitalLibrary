@@ -2,7 +2,6 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_mail import Mail
 from flask_login import LoginManager
 from sqlalchemy import text
-from urllib.parse import quote
 
 db = SQLAlchemy()
 mail = Mail()
@@ -11,11 +10,15 @@ login_manager = LoginManager()
 
 def init_app(app):
     # ===== CONFIG MYSQL =====
-    app.config["SQLALCHEMY_DATABASE_URI"] = \
-        "mysql+pymysql://root:%s@localhost/digital_library?charset=utf8mb4" % quote('123456')
+    from config import (
+        SQLALCHEMY_DATABASE_URI,
+        SQLALCHEMY_TRACK_MODIFICATIONS,
+        SQLALCHEMY_ENGINE_OPTIONS,
+    )
 
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['SECRET_KEY'] = 'your_secret_key'
+    app.config["SQLALCHEMY_DATABASE_URI"] = SQLALCHEMY_DATABASE_URI
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = SQLALCHEMY_TRACK_MODIFICATIONS
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = SQLALCHEMY_ENGINE_OPTIONS
 
     # ===== INIT EXTENSIONS =====
     db.init_app(app)
@@ -25,7 +28,6 @@ def init_app(app):
     login_manager.login_view = "auth.login"
 
     # ===== USER LOADER =====
-
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))

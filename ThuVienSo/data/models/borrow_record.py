@@ -26,7 +26,7 @@ class BorrowRecord(db.Model):
     extend_count = db.Column(db.Integer, default=0)
     extension_status = db.Column(db.String(20), nullable=True)
     extension_requested_at = db.Column(db.DateTime, nullable=True)
-
+    extension_days = db.Column(db.Integer, default=0)
     created_by = db.Column(
         db.Integer,
         db.ForeignKey("users.id"),

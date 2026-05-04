@@ -83,27 +83,70 @@ def get_request_status_label(status):
         "approved": "Đã duyệt",
         "rejected": "Đã từ chối",
     }
+
     return labels.get(status, status)
 
 
 def get_record_status_label(status):
-    if status == "overdue":
-        return "Trễ hạn"
-
     labels = {
         "borrowing": "Đang mượn",
         "returned": "Đã trả",
+        "overdue": "Trễ hạn",
+        "overdue_processed": "Đã xử lý trả trễ",
+        "borrow_banned": "Cấm mượn",
     }
+
     return labels.get(status, status)
 
 
 def get_active_rule():
-    rule = LibraryRule.query.filter_by(is_active=True).first()
+    rule = (
+        LibraryRule.query
+        .filter_by(is_active=True)
+        .order_by(LibraryRule.id.desc())
+        .first()
+    )
 
     if rule:
         return rule
 
-    return LibraryRule(max_books_per_borrow=3, max_borrow_days=14, max_extend_times=1)
+    # Fallback không lưu DB, chỉ để code không lỗi nếu chưa có rule.
+    rule = LibraryRule()
+    rule.max_books_per_borrow = 3
+    rule.max_borrow_days = 14
+
+    if hasattr(rule, "max_extend_times"):
+        rule.max_extend_times = 1
+
+    return rule
+
+
+def get_rule_max_books():
+    rule = get_active_rule()
+    return safe_int(getattr(rule, "max_books_per_borrow", 3), 3)
+
+
+def get_rule_max_borrow_days():
+    rule = get_active_rule()
+    return safe_int(getattr(rule, "max_borrow_days", 14), 14)
+
+
+def get_rule_max_extend_times():
+    rule = get_active_rule()
+    return safe_int(getattr(rule, "max_extend_times", 1), 1)
+
+
+def get_borrow_ban_message(user):
+    if not user:
+        return None
+
+    if getattr(user, "status", "") == "locked":
+        return "Tài khoản của bạn đang bị cấm mượn sách. Vui lòng liên hệ thủ thư hoặc quản trị viên."
+
+    if getattr(user, "status", "") == "inactive":
+        return "Tài khoản của bạn đang ngừng hoạt động, không thể mượn sách."
+
+    return None
 
 
 def refresh_overdue_records(user_id=None):
@@ -152,6 +195,7 @@ def get_active_borrow_quantity(user_id):
     )
 
     total = 0
+
     for record in records:
         for item in record.items:
             total += max((item.quantity or 0) - (item.returned_quantity or 0), 0)
@@ -171,6 +215,7 @@ def get_pending_borrow_quantity(user_id, excluded_request_id=None):
     )
 
     total = 0
+
     for borrow_request in requests:
         if excluded_request_id and borrow_request.id == excluded_request_id:
             continue
@@ -182,8 +227,7 @@ def get_pending_borrow_quantity(user_id, excluded_request_id=None):
 
 
 def get_borrow_limit_message(user_id, requested_quantity=0, excluded_request_id=None):
-    rule = get_active_rule()
-    max_books = rule.max_books_per_borrow or 3
+    max_books = get_rule_max_books()
     active_quantity = get_active_borrow_quantity(user_id)
     pending_quantity = get_pending_borrow_quantity(user_id, excluded_request_id)
 
@@ -192,6 +236,7 @@ def get_borrow_limit_message(user_id, requested_quantity=0, excluded_request_id=
 
     if active_quantity + pending_quantity + requested_quantity > max_books:
         remaining = max(max_books - active_quantity - pending_quantity, 0)
+
         return (
             f"Bạn chỉ còn có thể mượn thêm {remaining} quyển theo quy định hiện tại. "
             "Vui lòng giảm số lượng hoặc mượn lại sau khi trả sách."
@@ -244,7 +289,7 @@ def get_available_copies(book):
         .options(joinedload(BookCopy.branch))
         .filter(
             BookCopy.book_id == book.id,
-            BookCopy.available_quantity > 0
+            BookCopy.available_quantity > 0,
         )
         .order_by(BookCopy.branch_id.asc())
         .all()
@@ -262,7 +307,7 @@ def get_copy_by_branch(book, branch_id):
         .options(joinedload(BookCopy.branch))
         .filter(
             BookCopy.book_id == book.id,
-            BookCopy.branch_id == branch_id
+            BookCopy.branch_id == branch_id,
         )
         .first()
     )
@@ -316,7 +361,7 @@ def get_selected_book_copy_from_item(item):
             .options(joinedload(BookCopy.branch))
             .filter(
                 BookCopy.book_id == item.book_id,
-                BookCopy.branch_id == item.branch_id
+                BookCopy.branch_id == item.branch_id,
             )
             .first()
         )
@@ -517,6 +562,60 @@ def increase_book_copy_quantity(book, quantity, branch_id=None):
     return remaining == 0
 
 
+def mark_record_items_returned(borrow_record):
+    if not borrow_record:
+        return
+
+    for item in borrow_record.items:
+        book = get_book_with_copies(item.book_id)
+
+        if not book:
+            continue
+
+        not_returned_quantity = max(
+            (item.quantity or 0) - (item.returned_quantity or 0),
+            0,
+        )
+
+        if not_returned_quantity <= 0:
+            continue
+
+        branch_id = None
+
+        if hasattr(item, "book_copy") and item.book_copy:
+            branch_id = item.book_copy.branch_id
+        elif hasattr(item, "book_copy_id") and item.book_copy_id:
+            selected_copy = BookCopy.query.get(item.book_copy_id)
+
+            if selected_copy:
+                branch_id = selected_copy.branch_id
+        elif hasattr(item, "branch_id") and item.branch_id:
+            branch_id = item.branch_id
+
+        increase_book_copy_quantity(book, not_returned_quantity, branch_id)
+
+        item.returned_quantity = item.quantity
+        item.item_status = "returned"
+
+
+def add_return_record(borrow_record, current_user, note=None):
+    if ReturnRecord is None or not borrow_record:
+        return
+
+    try:
+        return_record = ReturnRecord(
+            borrow_record_id=borrow_record.id,
+            processed_by=current_user.id if current_user else None,
+            return_date=datetime.utcnow(),
+            note=note,
+            created_at=datetime.utcnow(),
+        )
+        db.session.add(return_record)
+    except TypeError:
+        # Nếu model ReturnRecord của nhóm bạn khác field, bỏ qua để không làm lỗi chức năng chính.
+        pass
+
+
 # ================== USER BORROW STATE ==================
 def get_user_borrow_states():
     current_user = get_current_user()
@@ -529,7 +628,7 @@ def get_user_borrow_states():
         .join(BorrowRequest)
         .filter(
             BorrowRequest.user_id == current_user.id,
-            BorrowRequest.status == "pending"
+            BorrowRequest.status == "pending",
         )
         .order_by(BorrowRequest.created_at.desc())
         .all()
@@ -541,7 +640,7 @@ def get_user_borrow_states():
         if item.book_id not in states:
             states[item.book_id] = {
                 "request_id": item.borrow_request_id,
-                "status": item.borrow_request.status
+                "status": item.borrow_request.status,
             }
 
     return states
@@ -559,7 +658,7 @@ def get_user_borrow_state_for_book(book_id):
         .filter(
             BorrowRequest.user_id == current_user.id,
             BorrowRequestItem.book_id == book_id,
-            BorrowRequest.status == "pending"
+            BorrowRequest.status == "pending",
         )
         .order_by(BorrowRequest.created_at.desc())
         .first()
@@ -572,7 +671,7 @@ def get_user_borrow_state_for_book(book_id):
 
     return {
         "request_id": borrow_request.id,
-        "status": borrow_request.status
+        "status": borrow_request.status,
     }
 
 
@@ -583,6 +682,11 @@ def show_borrow_form(book_id):
     if not current_user:
         flash("Bạn cần đăng nhập để mượn sách.", "error")
         return redirect(url_for("auth.login"))
+
+    ban_message = get_borrow_ban_message(current_user)
+    if ban_message:
+        flash(ban_message, "warning")
+        return redirect(url_for("borrow.history"))
 
     overdue_message = get_overdue_block_message(current_user.id)
     if overdue_message:
@@ -617,7 +721,7 @@ def show_borrow_form(book_id):
         .filter(
             BorrowRequest.user_id == current_user.id,
             BorrowRequestItem.book_id == book.id,
-            BorrowRequest.status == "pending"
+            BorrowRequest.status == "pending",
         )
         .order_by(BorrowRequest.created_at.desc())
         .first()
@@ -630,7 +734,7 @@ def show_borrow_form(book_id):
             flash(
                 "Bạn không thể mượn cùng một sách ở 2 chi nhánh khác nhau. "
                 "Nếu muốn đổi chi nhánh, vui lòng sửa phiếu mượn hiện có.",
-                "warning"
+                "warning",
             )
 
             existing_copy = get_copy_by_branch(book, existing_branch_id)
@@ -658,7 +762,7 @@ def show_borrow_form(book_id):
                 url_for(
                     "borrow.edit_form",
                     borrow_id=pending_item.borrow_request_id,
-                    branch_id=selected_branch_id
+                    branch_id=selected_branch_id,
                 )
             )
 
@@ -689,7 +793,7 @@ def show_borrow_form(book_id):
         quantity=1,
         note="",
         page_title="Phiếu yêu cầu mượn sách",
-        submit_text="Gửi yêu cầu mượn"
+        submit_text="Gửi yêu cầu mượn",
     )
 
 
@@ -700,6 +804,11 @@ def create_borrow_request(book_id):
     if not current_user:
         flash("Bạn cần đăng nhập để mượn sách.", "error")
         return redirect(url_for("auth.login"))
+
+    ban_message = get_borrow_ban_message(current_user)
+    if ban_message:
+        flash(ban_message, "warning")
+        return redirect(url_for("borrow.history"))
 
     overdue_message = get_overdue_block_message(current_user.id)
     if overdue_message:
@@ -741,7 +850,7 @@ def create_borrow_request(book_id):
         .filter(
             BorrowRequest.user_id == current_user.id,
             BorrowRequestItem.book_id == book.id,
-            BorrowRequest.status == "pending"
+            BorrowRequest.status == "pending",
         )
         .order_by(BorrowRequest.created_at.desc())
         .first()
@@ -754,7 +863,7 @@ def create_borrow_request(book_id):
             flash(
                 "Bạn đã có phiếu mượn đang chờ duyệt cho sách này ở chi nhánh khác. "
                 "Nếu muốn đổi chi nhánh, vui lòng sửa phiếu mượn hiện có.",
-                "warning"
+                "warning",
             )
             return redirect(url_for("borrow.edit_form", borrow_id=pending_item.borrow_request_id))
 
@@ -764,7 +873,7 @@ def create_borrow_request(book_id):
     borrow_request = BorrowRequest(
         user_id=current_user.id,
         status="pending",
-        note=note
+        note=note,
     )
 
     db.session.add(borrow_request)
@@ -773,7 +882,7 @@ def create_borrow_request(book_id):
     borrow_item = BorrowRequestItem(
         borrow_request_id=borrow_request.id,
         book_id=book.id,
-        quantity=quantity
+        quantity=quantity,
     )
 
     assign_branch_to_item(borrow_item, branch_id, selected_copy)
@@ -803,8 +912,6 @@ def get_borrow_history():
         .all()
     )
 
-    refresh_overdue_records()
-
     borrow_records = (
         BorrowRecord.query
         .filter(BorrowRecord.user_id == current_user.id)
@@ -825,7 +932,6 @@ def get_borrow_history():
     )
 
 
-# Alias để route của phuonganh nếu gọi tên này thì vẫn chạy đúng logic của bạn
 borrow_history_controller = get_borrow_history
 
 
@@ -874,7 +980,7 @@ def show_edit_borrow_request_form(borrow_id):
         flash(
             "Phiếu này đang mượn ở chi nhánh khác. "
             "Nếu muốn đổi chi nhánh, hãy chọn lại trong form sửa phiếu và bấm Lưu thay đổi.",
-            "warning"
+            "warning",
         )
         selected_branch_id = existing_branch_id
     else:
@@ -1005,7 +1111,7 @@ def delete_borrow_request(borrow_id):
     return redirect(url_for("borrow.history"))
 
 
-# ================== ADMIN: DANH SÁCH YÊU CẦU ==================
+# ================== USER: GỬI YÊU CẦU GIA HẠN ==================
 def request_borrow_extension(record_id):
     current_user = get_current_user()
 
@@ -1014,6 +1120,7 @@ def request_borrow_extension(record_id):
         return redirect(url_for("auth.login"))
 
     refresh_overdue_records(current_user.id)
+
     record = BorrowRecord.query.get(record_id)
 
     if not record or record.user_id != current_user.id:
@@ -1034,25 +1141,52 @@ def request_borrow_extension(record_id):
         flash("Phiếu mượn đã trễ hạn, không thể gửi yêu cầu gia hạn.", "warning")
         return redirect(url_for("borrow.history"))
 
-    rule = get_active_rule()
-    max_extend_times = rule.max_extend_times or 1
+    max_extend_times = 1
     extend_count = record.extend_count or 0
+    extension_status = (record.extension_status or "").strip().lower()
 
-    if extend_count >= max_extend_times:
-        flash("Phiếu mượn này đã dùng hết số lần gia hạn theo quy định.", "warning")
+    # Chỉ được gửi gia hạn 1 lần duy nhất.
+    # pending: đang chờ duyệt
+    # approved: đã được duyệt
+    # rejected: đã bị từ chối
+    if extension_status in {"pending", "approved", "rejected"} or extend_count >= max_extend_times:
+        flash("Phiếu này đã sử dụng lượt gia hạn, không thể gửi gia hạn lại.", "warning")
         return redirect(url_for("borrow.history"))
 
-    record.extend_count = extend_count + 1
-    record.extension_status = "approved"
+    max_extend_days = get_rule_max_borrow_days()
+
+    if request.method == "GET":
+        return render_template(
+            "borrow/extend.html",
+            record=record,
+            max_extend_days=max_extend_days,
+            max_extend_times=max_extend_times,
+            extend_count=extend_count,
+        )
+
+    extend_days = safe_int(request.form.get("extend_days"), 0)
+
+    if extend_days <= 0:
+        flash("Số ngày gia hạn không hợp lệ.", "error")
+        return redirect(url_for("borrow.extend_record", record_id=record.id))
+
+    if extend_days > max_extend_days:
+        flash(
+            f"Số ngày gia hạn không được vượt quá {max_extend_days} ngày theo quy định.",
+            "error"
+        )
+        return redirect(url_for("borrow.extend_record", record_id=record.id))
+
+    record.extension_status = "pending"
+    record.extension_days = extend_days
     record.extension_requested_at = datetime.utcnow()
-    record.due_date = record.due_date + timedelta(days=rule.max_borrow_days or 14)
 
     db.session.commit()
 
-    flash("Đã gửi yêu cầu gia hạn và cập nhật hạn trả mới cho phiếu mượn.", "success")
+    flash("Đã gửi yêu cầu gia hạn. Vui lòng chờ thủ thư/admin xác nhận.", "success")
     return redirect(url_for("borrow.history"))
 
-
+# ================== ADMIN: DANH SÁCH YÊU CẦU ==================
 def get_admin_borrow_requests():
     if not is_admin_or_librarian():
         flash("Bạn không có quyền truy cập chức năng này.", "error")
@@ -1081,7 +1215,7 @@ def get_admin_borrow_requests():
     )
 
 
-# ================== ADMIN: DUYỆT YÊU CẦU ==================
+# ================== ADMIN: DUYỆT YÊU CẦU MƯỢN ==================
 def approve_borrow_request(borrow_id):
     next_url = get_next_url("/admin?tab=borrow")
 
@@ -1104,13 +1238,21 @@ def approve_borrow_request(borrow_id):
         flash("Yêu cầu mượn không có sách.", "error")
         return redirect(next_url)
 
+    user = User.query.get(borrow_request.user_id)
+    ban_message = get_borrow_ban_message(user)
+    if ban_message:
+        flash(ban_message, "warning")
+        return redirect(next_url)
+
     refresh_overdue_records(borrow_request.user_id)
+
     overdue_message = get_overdue_block_message(borrow_request.user_id)
     if overdue_message:
         flash(overdue_message, "warning")
         return redirect(next_url)
 
     requested_quantity = sum((item.quantity or 0) for item in borrow_request.items)
+
     limit_message = get_borrow_limit_message(
         borrow_request.user_id,
         requested_quantity=requested_quantity,
@@ -1154,7 +1296,7 @@ def approve_borrow_request(borrow_id):
         borrow_request_id=borrow_request.id,
         user_id=borrow_request.user_id,
         borrow_date=datetime.utcnow(),
-        due_date=datetime.utcnow() + timedelta(days=get_active_rule().max_borrow_days or 14),
+        due_date=datetime.utcnow() + timedelta(days=get_rule_max_borrow_days()),
         status="borrowing",
         created_by=current_user.id if current_user else None,
     )
@@ -1192,7 +1334,7 @@ def approve_borrow_request(borrow_id):
     return redirect(next_url)
 
 
-# ================== ADMIN: TỪ CHỐI YÊU CẦU ==================
+# ================== ADMIN: TỪ CHỐI YÊU CẦU MƯỢN ==================
 def reject_borrow_request(borrow_id):
     next_url = get_next_url("/admin?tab=borrow")
 
@@ -1234,6 +1376,8 @@ def get_admin_borrow_records():
         flash("Bạn không có quyền truy cập chức năng này.", "error")
         return redirect("/admin?tab=users")
 
+    refresh_overdue_records()
+
     borrow_records = (
         BorrowRecord.query
         .order_by(BorrowRecord.borrow_date.desc())
@@ -1270,8 +1414,8 @@ def borrow_lookup_controller():
         params["kw"] = f"%{keyword}%"
 
     if status_filter:
-        conditions.append("br.status = :status")
-        params["status"] = status_filter
+        conditions.append("LOWER(TRIM(br.status)) = :status")
+        params["status"] = status_filter.lower().strip()
 
     if from_date:
         conditions.append("DATE(br.borrow_date) >= :from_date")
@@ -1334,7 +1478,7 @@ def borrow_manage_controller():
 
     returned_records = (
         BorrowRecord.query
-        .filter(BorrowRecord.status == "returned")
+        .filter(BorrowRecord.status.in_(["returned", "overdue_processed", "borrow_banned"]))
         .order_by(BorrowRecord.borrow_date.desc())
         .limit(50)
         .all()
@@ -1365,47 +1509,23 @@ def return_borrow_record(record_id):
         flash("Không tìm thấy phiếu mượn.", "error")
         return redirect(next_url)
 
-    if borrow_record.status not in ("borrowing", "overdue"):
-        flash("Phiếu mượn này không còn ở trạng thái đang mượn.", "warning")
+    if borrow_record.status != "borrowing":
+        flash("Chỉ xác nhận trả cho phiếu đang mượn. Phiếu trễ hạn cần xử lý bằng Cho phép mượn lại hoặc Cấm mượn.", "warning")
         return redirect(next_url)
 
-    for item in borrow_record.items:
-        book = get_book_with_copies(item.book_id)
-        not_returned_quantity = item.quantity - (item.returned_quantity or 0)
-
-        if not book:
-            continue
-
-        branch_id = None
-
-        if hasattr(item, "book_copy") and item.book_copy:
-            branch_id = item.book_copy.branch_id
-        elif hasattr(item, "book_copy_id") and item.book_copy_id:
-            selected_copy = BookCopy.query.get(item.book_copy_id)
-
-            if selected_copy:
-                branch_id = selected_copy.branch_id
-        elif hasattr(item, "branch_id") and item.branch_id:
-            branch_id = item.branch_id
-
-        if not_returned_quantity > 0:
-            increase_book_copy_quantity(book, not_returned_quantity, branch_id)
-            item.returned_quantity = item.quantity
-            item.item_status = "returned"
+    mark_record_items_returned(borrow_record)
 
     borrow_record.status = "returned"
 
-    if ReturnRecord is not None:
-        note = request.form.get("note", "").strip()
+    if getattr(borrow_record, "extension_status", None) == "pending":
+        borrow_record.extension_status = "rejected"
 
-        return_record = ReturnRecord(
-            borrow_record_id=borrow_record.id,
-            processed_by=current_user.id if current_user else None,
-            return_date=datetime.utcnow(),
-            note=note if note else None,
-            created_at=datetime.utcnow(),
-        )
-        db.session.add(return_record)
+    note = request.form.get("note", "").strip()
+    add_return_record(
+        borrow_record,
+        current_user,
+        note=note if note else None,
+    )
 
     db.session.commit()
 
@@ -1413,5 +1533,180 @@ def return_borrow_record(record_id):
     return redirect(next_url)
 
 
-# Alias để route của phuonganh nếu gọi tên này thì vẫn dùng logic trả sách theo chi nhánh của bạn
 return_book_controller = return_borrow_record
+
+
+# ================== ADMIN: XÁC NHẬN / TỪ CHỐI GIA HẠN ==================
+def approve_borrow_extension_request(record_id):
+    next_url = get_next_url("/admin?tab=borrow&view=records")
+
+    if not is_admin_or_librarian():
+        flash("Bạn không có quyền xác nhận gia hạn.", "error")
+        return redirect(next_url)
+
+    current_user = get_current_user()
+    record = BorrowRecord.query.get(record_id)
+
+    if not record:
+        flash("Không tìm thấy phiếu mượn.", "error")
+        return redirect(next_url)
+
+    refresh_overdue_records(record.user_id)
+
+    if record.status != "borrowing":
+        flash("Chỉ có thể xác nhận gia hạn cho phiếu đang mượn.", "warning")
+        return redirect(next_url)
+
+    if getattr(record, "extension_status", None) != "pending":
+        flash("Phiếu này không có yêu cầu gia hạn đang chờ xử lý.", "warning")
+        return redirect(next_url)
+
+    max_extend_times = 1
+    extend_count = record.extend_count or 0
+
+    if extend_count >= max_extend_times:
+        record.extension_status = "rejected"
+        db.session.commit()
+        flash(f"Phiếu này đã đạt tối đa {max_extend_times} lần gia hạn.", "warning")
+        return redirect(next_url)
+
+    max_extend_days = get_rule_max_borrow_days()
+    extend_days = safe_int(getattr(record, "extension_days", 0), 0)
+
+    if extend_days <= 0:
+        flash("Số ngày gia hạn không hợp lệ.", "error")
+        return redirect(next_url)
+
+    if extend_days > max_extend_days:
+        flash(
+            f"Số ngày gia hạn vượt quá {max_extend_days} ngày theo quy định.",
+            "error",
+        )
+        return redirect(next_url)
+
+    record.due_date = record.due_date + timedelta(days=extend_days)
+    record.extend_count = extend_count + 1
+    record.extension_status = "approved"
+
+    if hasattr(record, "extension_processed_at"):
+        record.extension_processed_at = datetime.utcnow()
+
+    if hasattr(record, "extension_processed_by"):
+        record.extension_processed_by = current_user.id if current_user else None
+
+    db.session.commit()
+
+    flash(f"Đã xác nhận gia hạn thêm {extend_days} ngày.", "success")
+    return redirect(next_url)
+
+
+def reject_borrow_extension_request(record_id):
+    next_url = get_next_url("/admin?tab=borrow&view=records")
+
+    if not is_admin_or_librarian():
+        flash("Bạn không có quyền từ chối gia hạn.", "error")
+        return redirect(next_url)
+
+    current_user = get_current_user()
+    record = BorrowRecord.query.get(record_id)
+
+    if not record:
+        flash("Không tìm thấy phiếu mượn.", "error")
+        return redirect(next_url)
+
+    if getattr(record, "extension_status", None) != "pending":
+        flash("Phiếu này không có yêu cầu gia hạn đang chờ xử lý.", "warning")
+        return redirect(next_url)
+
+    record.extension_status = "rejected"
+    record.extend_count = 1
+
+    if hasattr(record, "extension_processed_at"):
+        record.extension_processed_at = datetime.utcnow()
+
+    if hasattr(record, "extension_processed_by"):
+        record.extension_processed_by = current_user.id if current_user else None
+
+    db.session.commit()
+
+    flash("Đã từ chối yêu cầu gia hạn.", "success")
+    return redirect(next_url)
+
+
+# ================== ADMIN: XỬ LÝ PHIẾU TRỄ HẠN ==================
+def process_overdue_allow(record_id):
+    next_url = get_next_url("/admin?tab=borrow&view=records")
+
+    if not is_admin_or_librarian():
+        flash("Bạn không có quyền xử lý phiếu trễ hạn.", "error")
+        return redirect(next_url)
+
+    current_user = get_current_user()
+    record = BorrowRecord.query.get(record_id)
+
+    if not record:
+        flash("Không tìm thấy phiếu mượn.", "error")
+        return redirect(next_url)
+
+    if record.status != "overdue":
+        flash("Chỉ xử lý được phiếu đang trễ hạn.", "warning")
+        return redirect(next_url)
+
+    mark_record_items_returned(record)
+
+    record.status = "overdue_processed"
+
+    if getattr(record, "extension_status", None) == "pending":
+        record.extension_status = "rejected"
+
+    add_return_record(
+        record,
+        current_user,
+        note="Đã xử lý trả trễ và cho phép mượn lại.",
+    )
+
+    db.session.commit()
+
+    flash("Đã xử lý trả trễ. Độc giả được phép mượn lại.", "success")
+    return redirect(next_url)
+
+
+def process_overdue_ban(record_id):
+    next_url = get_next_url("/admin?tab=borrow&view=records")
+
+    if not is_admin_or_librarian():
+        flash("Bạn không có quyền xử lý phiếu trễ hạn.", "error")
+        return redirect(next_url)
+
+    current_user = get_current_user()
+    record = BorrowRecord.query.get(record_id)
+
+    if not record:
+        flash("Không tìm thấy phiếu mượn.", "error")
+        return redirect(next_url)
+
+    if record.status != "overdue":
+        flash("Chỉ xử lý được phiếu đang trễ hạn.", "warning")
+        return redirect(next_url)
+
+    mark_record_items_returned(record)
+
+    record.status = "borrow_banned"
+
+    if getattr(record, "extension_status", None) == "pending":
+        record.extension_status = "rejected"
+
+    user = User.query.get(record.user_id)
+    if user:
+        user.status = "locked"
+
+    add_return_record(
+        record,
+        current_user,
+        note="Đã xử lý trả trễ và cấm mượn.",
+    )
+
+    db.session.commit()
+
+    flash("Đã xử lý trả trễ và cấm mượn độc giả này.", "success")
+    return redirect(next_url)

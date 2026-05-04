@@ -1,8 +1,66 @@
-{% block content %}
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/borrow.css') }}">
+<style>
+    .action-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .action-group form {
+        margin: 0;
+    }
+
+    .extension-note {
+        display: block;
+        margin-top: 6px;
+        font-size: 12px;
+        color: #6b7280;
+        font-style: italic;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .status-borrowing {
+        background: #dbeafe;
+        color: #1d4ed8;
+    }
+
+    .status-overdue {
+        background: #fee2e2;
+        color: #b91c1c;
+    }
+
+    .status-returned {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .status-overdue_processed {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .status-borrow_banned {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .no-action {
+        color: #6b7280;
+        font-style: italic;
+    }
+</style>
 {% endblock %}
 
+{% block content %}
 <div class="container mt-4">
     <h2 class="mb-3">Quản lý mượn trả sách</h2>
 
@@ -12,7 +70,7 @@
         <button class="tab-btn" onclick="openTab(event, 'returned')">Đã trả</button>
     </div>
 
-    <!-- ================= TAB 1: ĐANG MƯỢN ================= -->
+    <!-- ================= TAB 1: ĐANG MƯỢN / TRỄ HẠN ================= -->
     <div id="borrowing" class="tab-panel active">
         {% if active_records %}
         <table class="table table-bordered table-hover align-middle">
@@ -27,83 +85,212 @@
                     <th>Hành động</th>
                 </tr>
             </thead>
+
             <tbody>
                 {% for record in active_records %}
-                {% set is_overdue = record.due_date and record.due_date < now %}
-                <tr class="{{ 'table-danger' if is_overdue else '' }}">
-                    <td>{{ record.id }}</td>
-                    <td>
-                        <strong>{{ record.user.full_name }}</strong><br>
-                        <small class="text-muted">{{ record.user.username }}</small>
-                    </td>
-                    <td>
-                        <ul class="mb-0 ps-3">
-                            {% for item in record.items %}
-                            <li>{{ item.book.title }} <span class="text-muted">(x{{ item.quantity }})</span></li>
-                            {% endfor %}
-                        </ul>
-                    </td>
-                    <td>{{ record.borrow_date.strftime('%d/%m/%Y') if record.borrow_date else '—' }}</td>
-                    <td>
-                        {{ record.due_date.strftime('%d/%m/%Y') if record.due_date else '—' }}
-                        {% if is_overdue %}
-                            <span class="badge bg-danger ms-1">Quá hạn</span>
-                        {% endif %}
-                    </td>
-                    <td><span class="badge bg-warning text-dark">Đang mượn</span></td>
-                    <td>
-                        <button type="button"
-                                class="btn btn-success btn-sm"
-                                data-bs-toggle="modal"
-                                data-bs-target="#returnModal{{ record.id }}">
-                            Xác nhận trả
-                        </button>
-                    </td>
-                </tr>
+                    {% set is_overdue = record.status == "overdue" or (record.due_date and record.due_date < now) %}
+
+                    <tr class="{{ 'table-danger' if is_overdue else '' }}">
+                        <td>#{{ record.id }}</td>
+
+                        <td>
+                            <strong>{{ record.user.full_name if record.user else "Không rõ" }}</strong><br>
+                            <small class="text-muted">
+                                {{ record.user.username if record.user else "—" }}
+                            </small>
+                        </td>
+
+                        <td>
+                            <ul class="mb-0 ps-3">
+                                {% for item in record.items %}
+                                    <li>
+                                        {{ item.book.title if item.book else "Sách không tồn tại" }}
+                                        <span class="text-muted">(x{{ item.quantity }})</span>
+
+                                        {% if get_record_item_branch_name is defined %}
+                                            <br>
+                                            <small class="text-muted">
+                                                Chi nhánh: {{ get_record_item_branch_name(item) }}
+                                            </small>
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </td>
+
+                        <td>
+                            {{ record.borrow_date.strftime('%d/%m/%Y') if record.borrow_date else '—' }}
+                        </td>
+
+                        <td>
+                            {{ record.due_date.strftime('%d/%m/%Y') if record.due_date else '—' }}
+
+                            {% if is_overdue %}
+                                <span class="badge bg-danger ms-1">Quá hạn</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            <span class="status-badge status-{{ record.status }}">
+                                {{ get_record_status_label(record.status) if get_record_status_label is defined else record.status }}
+                            </span>
+
+                            {% if record.extension_status == "pending" %}
+                                <span class="extension-note">
+                                    Đang chờ gia hạn
+                                    {% if record.extension_days %}
+                                        {{ record.extension_days }} ngày
+                                    {% endif %}
+                                </span>
+                            {% elif record.extension_status == "approved" %}
+                                <span class="extension-note">
+                                    Đã gia hạn {{ record.extend_count or 0 }} lần
+                                </span>
+                            {% elif record.extension_status == "rejected" %}
+                                <span class="extension-note">
+                                    Gia hạn đã bị từ chối
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if record.status == "borrowing" %}
+                                <div class="action-group">
+                                    <button type="button"
+                                            class="btn btn-success btn-sm"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#returnModal{{ record.id }}">
+                                        Xác nhận trả
+                                    </button>
+
+                                    {% if record.extension_status == "pending" %}
+                                        <form method="POST"
+                                              action="{{ url_for('borrow.approve_extension', record_id=record.id) }}">
+                                            <input type="hidden" name="next_url" value="{{ request.full_path }}">
+
+                                            <button type="submit" class="btn btn-primary btn-sm">
+                                                Xác nhận gia hạn
+                                                {% if record.extension_days %}
+                                                    {{ record.extension_days }} ngày
+                                                {% endif %}
+                                            </button>
+                                        </form>
+
+                                        <form method="POST"
+                                              action="{{ url_for('borrow.reject_extension', record_id=record.id) }}">
+                                            <input type="hidden" name="next_url" value="{{ request.full_path }}">
+
+                                            <button type="submit" class="btn btn-warning btn-sm">
+                                                Từ chối gia hạn
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+
+                            {% elif record.status == "overdue" %}
+                                <div class="action-group">
+                                    <form method="POST"
+                                          action="{{ url_for('borrow.overdue_allow', record_id=record.id) }}"
+                                          onsubmit="return confirm('Cho phép độc giả này mượn lại sau khi xử lý trả trễ?');">
+                                        <input type="hidden" name="next_url" value="{{ request.full_path }}">
+
+                                        <button type="submit" class="btn btn-primary btn-sm">
+                                            Cho phép mượn lại
+                                        </button>
+                                    </form>
+
+                                    <form method="POST"
+                                          action="{{ url_for('borrow.overdue_ban', record_id=record.id) }}"
+                                          onsubmit="return confirm('Cấm mượn độc giả này? Tài khoản sẽ bị khóa.');">
+                                        <input type="hidden" name="next_url" value="{{ request.full_path }}">
+
+                                        <button type="submit" class="btn btn-danger btn-sm">
+                                            Cấm mượn
+                                        </button>
+                                    </form>
+                                </div>
+
+                            {% else %}
+                                <span class="no-action">Không có</span>
+                            {% endif %}
+                        </td>
+                    </tr>
                 {% endfor %}
             </tbody>
         </table>
 
-        <!-- MODAL XÁC NHẬN TRẢ TỪNG PHIẾU -->
+        <!-- MODAL XÁC NHẬN TRẢ: CHỈ CHO PHIẾU ĐANG MƯỢN -->
         {% for record in active_records %}
-        <div class="modal fade" id="returnModal{{ record.id }}" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Xác nhận trả sách — Phiếu #{{ record.id }}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <form method="POST" action="{{ url_for('borrow.return_book', record_id=record.id) }}">
-                        <div class="modal-body">
-                            <p><strong>Độc giả:</strong> {{ record.user.full_name }} ({{ record.user.username }})</p>
-                            <p><strong>Sách:</strong></p>
-                            <ul>
-                                {% for item in record.items %}
-                                <li>{{ item.book.title }} — {{ item.quantity }} quyển</li>
-                                {% endfor %}
-                            </ul>
-                            <div class="mb-3">
-                                <label class="form-label">Ghi chú (tuỳ chọn)</label>
-                                <textarea name="note" class="form-control" rows="2"
-                                          placeholder="VD: sách bị rách trang..."></textarea>
+            {% if record.status == "borrowing" %}
+                <div class="modal fade" id="returnModal{{ record.id }}" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Xác nhận trả sách — Phiếu #{{ record.id }}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                             </div>
+
+                            <form method="POST" action="{{ url_for('borrow.return_book', record_id=record.id) }}">
+                                <input type="hidden" name="next_url" value="{{ request.full_path }}">
+
+                                <div class="modal-body">
+                                    <p>
+                                        <strong>Độc giả:</strong>
+                                        {{ record.user.full_name if record.user else "Không rõ" }}
+                                        {% if record.user %}
+                                            ({{ record.user.username }})
+                                        {% endif %}
+                                    </p>
+
+                                    <p><strong>Sách:</strong></p>
+
+                                    <ul>
+                                        {% for item in record.items %}
+                                            <li>
+                                                {{ item.book.title if item.book else "Sách không tồn tại" }}
+                                                — {{ item.quantity }} quyển
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+
+                                    {% if record.extension_status == "pending" %}
+                                        <div class="alert alert-warning">
+                                            Phiếu này đang có yêu cầu gia hạn chờ duyệt.
+                                            Nếu xác nhận trả, yêu cầu gia hạn sẽ không còn cần xử lý.
+                                        </div>
+                                    {% endif %}
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Ghi chú tùy chọn</label>
+                                        <textarea name="note"
+                                                  class="form-control"
+                                                  rows="2"
+                                                  placeholder="VD: sách bị rách trang..."></textarea>
+                                    </div>
+                                </div>
+
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                        Hủy
+                                    </button>
+
+                                    <button type="submit" class="btn btn-success">
+                                        Xác nhận trả
+                                    </button>
+                                </div>
+                            </form>
                         </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Huỷ</button>
-                            <button type="submit" class="btn btn-success">Xác nhận trả</button>
-                        </div>
-                    </form>
+                    </div>
                 </div>
-            </div>
-        </div>
+            {% endif %}
         {% endfor %}
 
         {% else %}
-        <div class="alert alert-info">Không có phiếu mượn nào đang hoạt động.</div>
+            <div class="alert alert-info">Không có phiếu mượn nào đang hoạt động.</div>
         {% endif %}
     </div>
 
-    <!-- ================= TAB 2: ĐÃ TRẢ ================= -->
+    <!-- ================= TAB 2: ĐÃ TRẢ / ĐÃ XỬ LÝ ================= -->
     <div id="returned" class="tab-panel">
         {% if returned_records %}
         <table class="table table-bordered table-hover align-middle">
@@ -113,39 +300,61 @@
                     <th>Độc giả</th>
                     <th>Sách</th>
                     <th>Ngày mượn</th>
-                    <th>Ngày trả</th>
+                    <th>Ngày trả / xử lý</th>
+                    <th>Trạng thái</th>
                     <th>Người xử lý</th>
                 </tr>
             </thead>
+
             <tbody>
                 {% for record in returned_records %}
-                {% set ret = record.return_records.order_by('id').first() %}
-                <tr>
-                    <td>{{ record.id }}</td>
-                    <td>
-                        <strong>{{ record.user.full_name }}</strong><br>
-                        <small class="text-muted">{{ record.user.username }}</small>
-                    </td>
-                    <td>
-                        <ul class="mb-0 ps-3">
-                            {% for item in record.items %}
-                            <li>{{ item.book.title }}</li>
-                            {% endfor %}
-                        </ul>
-                    </td>
-                    <td>{{ record.borrow_date.strftime('%d/%m/%Y') if record.borrow_date else '—' }}</td>
-                    <td>{{ ret.return_date.strftime('%d/%m/%Y') if ret else '—' }}</td>
-                    <td>{{ ret.processor.full_name if ret and ret.processor else '—' }}</td>
-                </tr>
+                    {% set ret = record.return_records.order_by('id').first() if record.return_records is defined else None %}
+
+                    <tr>
+                        <td>#{{ record.id }}</td>
+
+                        <td>
+                            <strong>{{ record.user.full_name if record.user else "Không rõ" }}</strong><br>
+                            <small class="text-muted">
+                                {{ record.user.username if record.user else "—" }}
+                            </small>
+                        </td>
+
+                        <td>
+                            <ul class="mb-0 ps-3">
+                                {% for item in record.items %}
+                                    <li>{{ item.book.title if item.book else "Sách không tồn tại" }}</li>
+                                {% endfor %}
+                            </ul>
+                        </td>
+
+                        <td>
+                            {{ record.borrow_date.strftime('%d/%m/%Y') if record.borrow_date else '—' }}
+                        </td>
+
+                        <td>
+                            {{ ret.return_date.strftime('%d/%m/%Y') if ret else '—' }}
+                        </td>
+
+                        <td>
+                            <span class="status-badge status-{{ record.status }}">
+                                {{ get_record_status_label(record.status) if get_record_status_label is defined else record.status }}
+                            </span>
+                        </td>
+
+                        <td>
+                            {{ ret.processor.full_name if ret and ret.processor else '—' }}
+                        </td>
+                    </tr>
                 {% endfor %}
             </tbody>
         </table>
+
         {% else %}
-        <div class="alert alert-info">Chưa có phiếu trả nào.</div>
+            <div class="alert alert-info">Chưa có phiếu trả nào.</div>
         {% endif %}
     </div>
 </div>
-
 {% endblock %}
 
 {% block extra_js %}
@@ -153,6 +362,7 @@
 function openTab(event, tabId) {
     document.querySelectorAll(".tab-panel").forEach(t => t.classList.remove("active"));
     document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+
     document.getElementById(tabId).classList.add("active");
     event.currentTarget.classList.add("active");
 }

@@ -1,8 +1,7 @@
 {% block content %}
 <div class="borrow-page">
     <div class="borrow-header">
-        <h1>Phiếu mượn sách</h1>
-        <p>Quản lý phiếu mượn đã được duyệt và xác nhận trả sách.</p>
+        <h1>Quản lý Trả</h1>
     </div>
 
     <div class="borrow-filter">
@@ -48,10 +47,11 @@
                                         <div class="borrow-book-info">
                                             <strong>{{ item.book.title if item.book else "Không rõ sách" }}</strong>
                                             <span>
-                                                Chi nhánh: {{ get_record_item_branch_name(item) if get_record_item_branch_name is defined else (item.book_copy.branch.name if item.book_copy and item.book_copy.branch else "Chưa chọn") }}
+                                                Chi nhánh:
+                                                {{ get_record_item_branch_name(item) if get_record_item_branch_name is defined else (item.book_copy.branch.name if item.book_copy and item.book_copy.branch else "Chưa chọn") }}
                                                 |
                                                 Đã trả:
-                                                {{ item.returned_quantity }}/{{ item.quantity }}
+                                                {{ item.returned_quantity or 0 }}/{{ item.quantity or 0 }}
                                             </span>
                                         </div>
                                     {% endfor %}
@@ -72,20 +72,106 @@
                                 <span class="borrow-status {{ record.status }}">
                                     {{ get_record_status_label(record.status) }}
                                 </span>
+
+                                {% if record.extension_status == "pending" %}
+                                    <br>
+                                    <small class="muted-text">
+                                        Chờ gia hạn
+                                        {% if record.extension_days %}
+                                            {{ record.extension_days }} ngày
+                                        {% endif %}
+                                    </small>
+                                {% elif record.extension_status == "approved" %}
+                                    <br>
+                                    <small class="muted-text">
+                                        Đã gia hạn {{ record.extend_count or 0 }} lần
+                                    </small>
+                                {% elif record.extension_status == "rejected" %}
+                                    <br>
+                                    <small class="muted-text">
+                                        Gia hạn bị từ chối
+                                    </small>
+                                {% endif %}
                             </td>
 
                             <td>
                                 {% if record.status == "borrowing" %}
-                                    <form method="POST"
-                                          action="{{ url_for('borrow.return_record', record_id=record.id) }}">
-                                        <input type="hidden"
-                                               name="next_url"
-                                               value="/admin?tab=borrow&view=records">
 
-                                        <button type="submit" class="btn-return">
-                                            Xác nhận trả
-                                        </button>
-                                    </form>
+                                    <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-start;">
+
+                                        <form method="POST"
+                                              action="{{ url_for('borrow.return_record', record_id=record.id) }}"
+                                              style="margin: 0;">
+                                            <input type="hidden"
+                                                   name="next_url"
+                                                   value="/admin?tab=borrow&view=records">
+
+                                            <button type="submit" class="btn-return">
+                                                Xác nhận trả
+                                            </button>
+                                        </form>
+
+                                        {% if record.extension_status == "pending" %}
+                                            <form method="POST"
+                                                  action="{{ url_for('borrow.approve_extension', record_id=record.id) }}"
+                                                  style="margin: 0;">
+                                                <input type="hidden"
+                                                       name="next_url"
+                                                       value="/admin?tab=borrow&view=records">
+
+                                                <button type="submit" class="btn-return">
+                                                    Xác nhận gia hạn
+                                                    {% if record.extension_days %}
+                                                        {{ record.extension_days }} ngày
+                                                    {% endif %}
+                                                </button>
+                                            </form>
+
+                                            <form method="POST"
+                                                  action="{{ url_for('borrow.reject_extension', record_id=record.id) }}"
+                                                  style="margin: 0;">
+                                                <input type="hidden"
+                                                       name="next_url"
+                                                       value="/admin?tab=borrow&view=records">
+
+                                                <button type="submit" class="btn-return">
+                                                    Từ chối gia hạn
+                                                </button>
+                                            </form>
+                                        {% endif %}
+
+                                    </div>
+
+                                {% elif record.status == "overdue" %}
+
+                                    <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-start;">
+
+                                        <form method="POST"
+                                              action="{{ url_for('borrow.overdue_allow', record_id=record.id) }}"
+                                              style="margin: 0;">
+                                            <input type="hidden"
+                                                   name="next_url"
+                                                   value="/admin?tab=borrow&view=records">
+
+                                            <button type="submit" class="btn-return">
+                                                Cho phép mượn lại
+                                            </button>
+                                        </form>
+
+                                        <form method="POST"
+                                              action="{{ url_for('borrow.overdue_ban', record_id=record.id) }}"
+                                              style="margin: 0;">
+                                            <input type="hidden"
+                                                   name="next_url"
+                                                   value="/admin?tab=borrow&view=records">
+
+                                            <button type="submit" class="btn-return">
+                                                Cấm mượn
+                                            </button>
+                                        </form>
+
+                                    </div>
+
                                 {% else %}
                                     <span class="no-action">Không có</span>
                                 {% endif %}

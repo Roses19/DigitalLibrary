@@ -1,5 +1,4 @@
 import os
-
 from dotenv import load_dotenv
 from flask import Flask, session
 
@@ -67,7 +66,7 @@ def scheduled_job():
 
 
 # Không tự chạy scheduler trên PythonAnywhere web process.
-# Chỉ bật khi bạn set ENABLE_SCHEDULER=true trong .env local.
+# Chỉ bật khi set ENABLE_SCHEDULER=true trong .env local.
 if os.getenv("ENABLE_SCHEDULER", "false").lower() == "true":
     from apscheduler.schedulers.background import BackgroundScheduler
 

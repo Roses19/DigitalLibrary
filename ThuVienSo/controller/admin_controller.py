@@ -233,6 +233,7 @@ def admin_dashboard():
                 book_query
                 .join(BookCopy)
                 .filter(BookCopy.branch_id == current_user.branch_id)
+                .distinct()
             )
         else:
             book_query = book_query.filter(False)
