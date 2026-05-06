@@ -74,19 +74,6 @@
                         {% include "partials/book_card.html" %}
                     {% endwith %}
 
-                    <div class="recommendation-meta">
-                        <div class="recommendation-score">
-                            Độ phù hợp: <strong>{{ "%.0f"|format((item.score or 0) * 100) }}%</strong>
-                        </div>
-                        <p>{{ item.reason }}</p>
-
-                        {% set prediction = predictions.get(item.book.id) %}
-                        {% if prediction %}
-                            <span class="prediction-chip">
-                                Dự đoán {{ prediction.predicted_borrow_count }} lượt mượn
-                            </span>
-                        {% endif %}
-                    </div>
                 </article>
             {% endfor %}
         </div>

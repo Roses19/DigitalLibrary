@@ -89,6 +89,7 @@ CREATE TABLE books (
     total_quantity INT DEFAULT 0,
     available_quantity INT DEFAULT 0,
     status VARCHAR(20) DEFAULT 'available',
+    is_deleted BOOLEAN DEFAULT 0,
     created_by INT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

@@ -35,11 +35,15 @@ def _current_user_from_session():
 
 
 def _base_book_query():
-    return Book.query.options(
-        joinedload(Book.authors),
-        joinedload(Book.category),
-        joinedload(Book.publisher),
-        joinedload(Book.copies).joinedload(BookCopy.branch),
+    return (
+        Book.query
+        .filter(Book.is_deleted == False)
+        .options(
+            joinedload(Book.authors),
+            joinedload(Book.category),
+            joinedload(Book.publisher),
+            joinedload(Book.copies).joinedload(BookCopy.branch),
+        )
     )
 
 
@@ -76,6 +80,89 @@ def _latest_predictions(book_ids):
         predictions.setdefault(row.book_id, row)
 
     return predictions
+
+
+def _user_has_recommendation_history(user):
+    if not user:
+        return False
+
+    if FavoriteCategory.query.filter_by(user_id=user.id).first():
+        return True
+
+    if BookView.query.filter_by(user_id=user.id).first():
+        return True
+
+    if SearchHistory.query.filter_by(user_id=user.id).first():
+        return True
+
+    borrowed = (
+        BorrowRecordItem.query
+        .join(BorrowRecord)
+        .filter(BorrowRecord.user_id == user.id)
+        .first()
+    )
+
+    return bool(borrowed)
+
+
+def _general_reader_recommendations(limit=8):
+    scores = defaultdict(float)
+
+    for item in BookView.query.all():
+        scores[item.book_id] += 1
+
+    for item in BorrowRecordItem.query.all():
+        scores[item.book_id] += 3 * (item.quantity or 1)
+
+    pending_items = (
+        BorrowRequestItem.query
+        .join(BorrowRequest)
+        .filter(BorrowRequest.status.in_(["pending", "approved"]))
+        .all()
+    )
+
+    for item in pending_items:
+        scores[item.book_id] += 2 * (item.quantity or 1)
+
+    if scores:
+        ranked = sorted(scores.items(), key=lambda item: item[1], reverse=True)
+        book_ids = [book_id for book_id, _score in ranked]
+        books = _base_book_query().filter(Book.id.in_(book_ids)).all()
+        books_by_id = {book.id: book for book in books}
+        result = []
+
+        for book_id, score in ranked:
+            book = books_by_id.get(book_id)
+            if not book:
+                continue
+
+            result.append({
+                "book": book,
+                "score": min(round(score / 100, 2), 0.99),
+                "reason": "",
+            })
+
+            if len(result) >= limit:
+                return result
+
+        if result:
+            return result
+
+    books = (
+        _base_book_query()
+        .order_by(Book.id.desc())
+        .limit(limit)
+        .all()
+    )
+
+    return [
+        {
+            "book": book,
+            "score": 0,
+            "reason": "",
+        }
+        for book in books
+    ]
 
 
 def _fallback_recommendations(user):
@@ -287,18 +374,25 @@ def get_recommendations():
         .all()
     )
 
-    if stored:
+    has_history = _user_has_recommendation_history(user)
+
+    if has_history and stored:
         recommendations = [
             {
                 "book": item.book,
                 "score": item.score or 0,
-                "reason": item.reason or "Phù hợp với lịch sử xem, mượn và tìm kiếm của bạn",
+                "reason": item.reason or "",
             }
             for item in stored
-            if item.book
+            if item.book and not item.book.is_deleted
         ]
-    else:
+    elif has_history:
         recommendations = _fallback_recommendations(user)
+    else:
+        recommendations = _general_reader_recommendations()
+
+    if not recommendations:
+        recommendations = _general_reader_recommendations()
 
     books = [item["book"] for item in recommendations]
     attach_books_quantity(books)

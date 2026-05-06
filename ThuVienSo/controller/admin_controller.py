@@ -219,7 +219,16 @@ def admin_dashboard():
     publishers = Publisher.query.order_by(Publisher.name.asc()).all()
     branches = Branch.query.order_by(Branch.name.asc()).all()
 
-    book_query = Book.query
+    book_query = (
+        Book.query
+        .filter(Book.is_deleted == False)
+        .options(
+            joinedload(Book.authors),
+            joinedload(Book.category),
+            joinedload(Book.publisher),
+            joinedload(Book.copies).joinedload(BookCopy.branch),
+        )
+    )
 
     if selected_category:
         category_id = safe_int(selected_category, 0)
@@ -238,12 +247,7 @@ def admin_dashboard():
         else:
             book_query = book_query.filter(False)
 
-    books = (
-        book_query
-        .options(joinedload(Book.copies).joinedload(BookCopy.branch))
-        .order_by(Book.id.asc())
-        .all()
-    )
+    books = book_query.order_by(Book.id.asc()).all()
 
     rule = LibraryRule.query.filter_by(is_active=True).first()
 
@@ -299,14 +303,20 @@ def admin_dashboard():
 
     returned_on_time = BorrowRecord.query.filter_by(status="returned").count()
     not_returned = borrowing
-    total_titles = Book.query.count()
+    total_titles = Book.query.filter(Book.is_deleted == False).count()
 
     total_book_quantity = (
-        db.session.query(func.sum(BookCopy.total_quantity)).scalar()
+        db.session.query(func.sum(BookCopy.total_quantity))
+        .join(Book)
+        .filter(Book.is_deleted == False)
+        .scalar()
     ) or 0
 
     available_books = (
-        db.session.query(func.sum(BookCopy.available_quantity)).scalar()
+        db.session.query(func.sum(BookCopy.available_quantity))
+        .join(Book)
+        .filter(Book.is_deleted == False)
+        .scalar()
     ) or 0
 
     borrowed_books = total_book_quantity - available_books

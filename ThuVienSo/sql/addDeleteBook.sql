@@ -1,3 +1,3 @@
 use digital_library;
 ALTER TABLE books
-ADD COLUMN is_deleted BOOLEAN DEFAULT 0;
+ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT 0;

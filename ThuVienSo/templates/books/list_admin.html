@@ -331,30 +331,17 @@
                                         </div>
                                     </div>
 
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label>Số lượng còn</label>
-                                            <input type="number"
-                                                   name="available_quantity"
-                                                   value="{{ book.available_quantity or 0 }}"
-                                                   min="0">
-                                        </div>
-
-                                        <div class="form-group">
-                                            <label>URL ảnh bìa</label>
-                                            <input type="text"
-                                                   name="cover_image"
-                                                   value="{{ book.cover_image or '' }}">
-                                        </div>
-                                    </div>
-
                                     <!-- 🔥 BỔ SUNG -->
 <div class="form-row">
     <div class="form-group">
         <label>Tác giả</label>
         <input type="text"
                name="authors"
-               value="{{ book.authors | map(attribute='name') | join(', ') if book.authors else '' }}">
+               value="{{ book.authors | map(attribute='name') | join(', ') if book.authors else '' }}"
+               disabled
+               readonly
+               title="Tác giả không thể chỉnh sửa tại đây"
+               style="background-color: #e5e7eb; color: #6b7280; cursor: not-allowed;">
     </div>
 
     <div class="form-group">
@@ -380,7 +367,14 @@
                value="{{ book.pages or 0 }}">
     </div>
 </div>
-<!-- END BỔ SUNG -->
+   <div class="form-row">
+                                        <div class="form-group">
+                                            <label>URL ảnh bìa</label>
+                                            <input type="text"
+                                                   name="cover_image"
+                                                   value="{{ book.cover_image or '' }}">
+                                        </div>
+                                    </div>
                                     <div class="form-group">
                                         <label>Mô tả</label>
                                         <textarea name="description"

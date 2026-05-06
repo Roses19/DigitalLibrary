@@ -29,8 +29,9 @@ services:
       - --collation-server=utf8mb4_unicode_ci
     volumes:
       - digital-library-db-data:/var/lib/mysql
-      - ./ThuVienSo/sql/insBranchnBookCopy.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
-      - ./ThuVienSo/sql/insDataBnBCopy.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+      - ./ThuVienSo/sql:/ThuVienSo/sql:ro
+      - ./ThuVienSo/sql:/docker-entrypoint-initdb.d/ThuVienSo/sql:ro
+      - ./ThuVienSo/sql/full_server_setup.sql:/docker-entrypoint-initdb.d/01-full-server-setup.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD"]
       interval: 10s

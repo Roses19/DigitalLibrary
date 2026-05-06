@@ -1,9 +1,10 @@
 from flask import render_template, request, redirect, url_for, flash, session
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 from sqlalchemy.orm import joinedload
 
 from ThuVienSo import db
 from ThuVienSo.data.models.book import Book
+from ThuVienSo.data.models.book_author import book_authors
 from ThuVienSo.data.models.book_copy import BookCopy
 from ThuVienSo.data.models.category import Category
 from ThuVienSo.data.models.publisher import Publisher
@@ -12,6 +13,7 @@ from ThuVienSo.data.models.user import User
 from ThuVienSo.data.models.borrow_request import BorrowRequest
 from ThuVienSo.data.models.borrow_request_item import BorrowRequestItem
 from ThuVienSo.data.models.branch import Branch
+from datetime import datetime
 
 
 # =========================================================
@@ -182,6 +184,46 @@ def merge_selected_values(*values_groups):
                 merged.append(value)
 
     return merged
+
+
+def parse_author_names(authors_text):
+    author_names = []
+
+    for raw_name in (authors_text or "").split(","):
+        name = " ".join(raw_name.strip().split())
+
+        if name and name.lower() not in [item.lower() for item in author_names]:
+            author_names.append(name)
+
+    return author_names
+
+
+def sync_book_authors(book, authors_text):
+    if not book or not book.id:
+        return
+
+    db.session.execute(
+        book_authors.delete().where(book_authors.c.book_id == book.id)
+    )
+
+    for author_name in parse_author_names(authors_text):
+        author = (
+            Author.query
+            .filter(func.lower(func.trim(Author.name)) == author_name.lower())
+            .first()
+        )
+
+        if not author:
+            author = Author(name=author_name)
+            db.session.add(author)
+            db.session.flush()
+
+        db.session.execute(
+            book_authors.insert().values(
+                book_id=book.id,
+                author_id=author.id,
+            )
+        )
 
 
 def get_book_status_value(book):
@@ -575,6 +617,8 @@ def create_book():
         flash("Số lượng còn không được lớn hơn tổng số lượng.", "error")
         return redirect(next_url or url_for("book.book_list"))
 
+    current_user = get_current_user()
+
     book = Book(
         title=title,
         isbn=isbn or None,
@@ -584,11 +628,17 @@ def create_book():
         description=description or None,
         cover_image=cover_image or None,
         category_id=category_id,
-        publisher_id=publisher_id
+        publisher_id=publisher_id,
+        status="available",
+        created_by=current_user.id if current_user else None,
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow(),
+        is_deleted=False,
     )
 
     db.session.add(book)
     db.session.flush()
+    sync_book_authors(book, request.form.get("authors", ""))
 
     if branch_id:
         db.session.add(
@@ -633,6 +683,7 @@ def update_book(book_id):
     book.cover_image = request.form.get("cover_image", "").strip() or None
     book.category_id = safe_int(request.form.get("category_id"))
     book.publisher_id = safe_int(request.form.get("publisher_id"))
+    book.updated_at = datetime.utcnow()
 
     db.session.commit()
 
@@ -652,6 +703,7 @@ def delete_book(book_id):
         return redirect(next_url)
 
     book.is_deleted = True
+    book.updated_at = datetime.utcnow()
     for copy in book.copies:
         copy.available_quantity = 0
         copy.total_quantity = 0
