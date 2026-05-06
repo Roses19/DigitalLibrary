@@ -149,6 +149,7 @@ CREATE TABLE favorite_categories (
     user_id INT NOT NULL,
     category_id INT NOT NULL,
     score FLOAT DEFAULT 0,
+    UNIQUE (user_id, category_id),
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (category_id) REFERENCES categories(id)
 );

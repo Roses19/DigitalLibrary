@@ -9,6 +9,23 @@ ALTER TABLE borrow_request_items
 ALTER TABLE borrow_record_items
     ADD COLUMN IF NOT EXISTS book_copy_id INT NULL AFTER book_id;
 
+SET @uq_favorite_categories_exists := (
+    SELECT COUNT(*)
+    FROM information_schema.STATISTICS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'favorite_categories'
+      AND INDEX_NAME = 'uq_favorite_categories_user_category'
+);
+
+SET @sql_uq_favorite_categories := IF(
+    @uq_favorite_categories_exists = 0,
+    'ALTER TABLE favorite_categories ADD CONSTRAINT uq_favorite_categories_user_category UNIQUE (user_id, category_id)',
+    'SELECT 1'
+);
+PREPARE stmt_uq_favorite_categories FROM @sql_uq_favorite_categories;
+EXECUTE stmt_uq_favorite_categories;
+DEALLOCATE PREPARE stmt_uq_favorite_categories;
+
 
 INSERT INTO roles (name, description)
 SELECT 'Độc giả', 'Người dùng mượn và tìm kiếm sách'
@@ -107,31 +124,31 @@ SET @author_nna := (SELECT id FROM authors WHERE name = 'Nguyễn Nhật Ánh' L
 INSERT INTO books (category_id, publisher_id, title, isbn, description, cover_image, publish_year, language, pages, status, created_by, created_at)
 SELECT @cat_data, @pub_tech, 'Nhập môn Học máy cho thư viện số', 'RCM-ML-001',
        'Machine learning cơ bản, hệ gợi ý sách, phân cụm độc giả và dự đoán nhu cầu mượn.',
-       '/static/resources/books/ml-library.jpg', 2024, 'Tiếng Việt', 312, 'available', @admin_id, '2026-04-26 09:00:00'
+       'https://k3bxzjut8xobj.vcdn.cloud/Book/thumb-94e98edc-20e9-43c8-bd93-5df5d90b3a98.jpg', 2024, 'Tiếng Việt', 312, 'available', @admin_id, '2026-04-26 09:00:00'
 WHERE NOT EXISTS (SELECT 1 FROM books WHERE isbn = 'RCM-ML-001');
 
 INSERT INTO books (category_id, publisher_id, title, isbn, description, cover_image, publish_year, language, pages, status, created_by, created_at)
 SELECT @cat_data, @pub_tech, 'Tìm kiếm ngữ nghĩa với Python', 'RCM-SEM-002',
        'Xây dựng semantic search, embedding văn bản, truy vấn gần nghĩa và xếp hạng kết quả.',
-       '/static/resources/books/semantic-python.jpg', 2025, 'Tiếng Việt', 286, 'available', @admin_id, '2026-04-26 09:05:00'
+       'https://cdn.mcivietnam.com/nhanvien/media/post/uploads/2021/07/sach-python-co-ban-bui-viet-ha-pdf.jpg', 2025, 'Tiếng Việt', 286, 'available', @admin_id, '2026-04-26 09:05:00'
 WHERE NOT EXISTS (SELECT 1 FROM books WHERE isbn = 'RCM-SEM-002');
 
 INSERT INTO books (category_id, publisher_id, title, isbn, description, cover_image, publish_year, language, pages, status, created_by, created_at)
 SELECT @cat_psych, @pub_young, 'Thói quen đọc sách hiệu quả', 'RCM-HABIT-003',
        'Cách hình thành thói quen đọc, ghi chú và duy trì động lực học tập mỗi ngày.',
-       '/static/resources/books/reading-habit.jpg', 2023, 'Tiếng Việt', 220, 'available', @admin_id, '2026-04-26 09:10:00'
+       'https://static.oreka.vn/800-800_8b36c2f9-3178-4912-848f-6c30ed91a538.webp', 2023, 'Tiếng Việt', 220, 'available', @admin_id, '2026-04-26 09:10:00'
 WHERE NOT EXISTS (SELECT 1 FROM books WHERE isbn = 'RCM-HABIT-003');
 
 INSERT INTO books (category_id, publisher_id, title, isbn, description, cover_image, publish_year, language, pages, status, created_by, created_at)
 SELECT @cat_lit, @pub_young, 'Mùa hè trong mắt biếc', 'RCM-LIT-004',
        'Truyện dài nhẹ nhàng về tuổi trẻ, ký ức và những rung động đầu đời.',
-       '/static/resources/books/mua-he-mat-biec.jpg', 2022, 'Tiếng Việt', 198, 'available', @admin_id, '2026-04-26 09:15:00'
+       'https://danviet.ex-cdn.com/files/f1/upload/4-2019/images/2019-12-23/dung-bao-gio-yeu-mot-nguoi-dan-ong-nhu-Ngan-trong-Mat-biec-dsc2485-15767423176642073990854-1577042160-width620height930.jpg', 2022, 'Tiếng Việt', 198, 'available', @admin_id, '2026-04-26 09:15:00'
 WHERE NOT EXISTS (SELECT 1 FROM books WHERE isbn = 'RCM-LIT-004');
 
 INSERT INTO books (category_id, publisher_id, title, isbn, description, cover_image, publish_year, language, pages, status, created_by, created_at)
 SELECT @cat_data, @pub_tech, 'Phân tích dữ liệu mượn sách', 'RCM-DATA-005',
        'Phân tích hành vi mượn sách, xu hướng theo thời gian và dự báo tồn kho thư viện.',
-       '/static/resources/books/borrow-analytics.jpg', 2025, 'Tiếng Việt', 340, 'available', @admin_id, '2026-04-27 09:00:00'
+       'https://nxbhcm.com.vn/Image/Biasach/phantichdulieuvoiRbiahoptaiban.jpg', 2025, 'Tiếng Việt', 340, 'available', @admin_id, '2026-04-27 09:00:00'
 WHERE NOT EXISTS (SELECT 1 FROM books WHERE isbn = 'RCM-DATA-005');
 
 SET @book_ml := (SELECT id FROM books WHERE isbn = 'RCM-ML-001' LIMIT 1);

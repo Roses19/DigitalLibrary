@@ -2,6 +2,12 @@ USE digital_library;
 -- Nếu chạy trên PythonAnywhere thì đổi thành:
 -- USE `namvfg$digital_library`;
 
+ALTER TABLE borrow_request_items
+    ADD COLUMN IF NOT EXISTS book_copy_id INT NULL AFTER book_id;
+
+ALTER TABLE borrow_record_items
+    ADD COLUMN IF NOT EXISTS book_copy_id INT NULL AFTER book_id;
+
 START TRANSACTION;
 
 -- =========================
