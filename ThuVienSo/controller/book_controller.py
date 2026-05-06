@@ -684,6 +684,7 @@ def update_book(book_id):
     book.category_id = safe_int(request.form.get("category_id"))
     book.publisher_id = safe_int(request.form.get("publisher_id"))
     book.updated_at = datetime.utcnow()
+    sync_book_authors(book, request.form.get("authors", ""))
 
     db.session.commit()
 

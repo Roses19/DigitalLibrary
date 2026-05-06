@@ -337,11 +337,7 @@
         <label>Tác giả</label>
         <input type="text"
                name="authors"
-               value="{{ book.authors | map(attribute='name') | join(', ') if book.authors else '' }}"
-               disabled
-               readonly
-               title="Tác giả không thể chỉnh sửa tại đây"
-               style="background-color: #e5e7eb; color: #6b7280; cursor: not-allowed;">
+               value="{{ book.authors | map(attribute='name') | join(', ') if book.authors else '' }}">
     </div>
 
     <div class="form-group">
