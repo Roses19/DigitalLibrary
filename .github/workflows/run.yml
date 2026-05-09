@@ -1,0 +1,21 @@
+name: Run Digital Library
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Build and start Docker Compose
+        run: docker compose up -d --build
+
+      - name: Show running containers
+        run: docker compose ps

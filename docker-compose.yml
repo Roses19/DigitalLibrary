@@ -1,0 +1,42 @@
+services:
+  web:
+    build: .
+    container_name: digital-library-web
+    ports:
+      - "5000:5000"
+    environment:
+      SECRET_KEY: digital-library-dev-secret
+      DB_USER: root
+      DB_PASSWORD: root
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: digital_library
+      ENABLE_SCHEDULER: "false"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.4
+    container_name: digital-library-db
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - digital-library-db-data:/var/lib/mysql
+      - ./ThuVienSo/sql/insBranchnBookCopy.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./ThuVienSo/sql/insDataBnBCopy.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  digital-library-db-data:
