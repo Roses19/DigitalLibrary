@@ -3,7 +3,7 @@ services:
     build: .
     container_name: digital-library-web
     ports:
-      - "5000:5000"
+      - "80:5000"
     environment:
       SECRET_KEY: digital-library-dev-secret
       DB_USER: root
